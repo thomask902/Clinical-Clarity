@@ -7,29 +7,35 @@ function Index() {
 
   // LOCAL
   // const API_BASE_URL = 'http://localhost:8080/api/home';
-
-
-  const [message, setMessage] = useState("Loading");
-  // const [team, setTeam] = useState([]);
+  
+  const [message, setMessage] = useState('Loading');
+  const [team, setTeam] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/home`).then(
-      response => response.json()
-    ).then(
-      data => {
-        // message is "loading" and once it is retrieved it is set to data.message from api
-        setMessage(data.message);
-        // setTeam(data.team);
-        //console.log(data.team)
-      }
-    )
-  }, [])
+    fetch(`${API_BASE_URL}/api/home`)
+      .then((response) => response.json())
+      .then((data) => {
+        setMessage(data.message); // Set the message
+        setTeam(data.team); // Set the team list
+      })
+      .catch((error) => {
+        console.error('Error fetching data:', error);
+      });
+  }, []);
 
   return (
     <div>
       <div>Welcome to the Clinical Clarity Next.js App!</div>
       <div>We are team 13 :)</div>
       <div>{message}</div>
+      <div>
+        <h3>Our Team:</h3>
+        <ul>
+          {team.map((member, index) => (
+            <li key={index}>{member}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
