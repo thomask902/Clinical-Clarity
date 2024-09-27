@@ -10,7 +10,7 @@ function Index() {
 
 
   const [message, setMessage] = useState("Loading");
-  const [team, setTeam] = useState([]);
+  // const [team, setTeam] = useState([]);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/home`).then(
@@ -19,8 +19,8 @@ function Index() {
       data => {
         // message is "loading" and once it is retrieved it is set to data.message from api
         setMessage(data.message);
-        setTeam(data.team);
-        console.log(data.team)
+        // setTeam(data.team);
+        //console.log(data.team)
       }
     )
   }, [])
@@ -29,6 +29,7 @@ function Index() {
     <div>
       <div>Welcome to the Clinical Clarity Next.js App!</div>
       <div>We are team 13 :)</div>
+      <div>{message}</div>
     </div>
   );
 }
