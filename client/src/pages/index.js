@@ -22,7 +22,10 @@ function index() {
   */
 
   return (
-    <div>Welcome to the Clinical Clarity Next.js App!</div>
+    <div>
+      <div>Welcome to the Clinical Clarity Next.js App!</div>
+      <div>We are team 13 :)</div>
+    </div>
   );
 }
 
