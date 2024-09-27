@@ -35,13 +35,17 @@ Testing:
 When dev is stable, merge into test for further testing:
 
 git checkout test
+
 git merge dev
+
 git push origin test
 
 After successful testing, merge test into prod:
 
 git checkout prod
+
 git merge test
+
 git push origin prod
 
 
