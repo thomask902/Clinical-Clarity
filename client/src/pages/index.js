@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-function index() {
+function Index() {
 
   // PROD
   const API_BASE_URL = 'https://clinical-clarity-backend.onrender.com';
