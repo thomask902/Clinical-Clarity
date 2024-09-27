@@ -11,7 +11,7 @@ CORS(app)
 @app.route("/api/home", methods=['GET'])
 def return_home():
     return jsonify({
-        'message': "Hello clinical clarity! Welcome to our app!",
+        'message': "We are team 13 :)",
         'team': ['Thomas', 'Saleh', 'Abhinav', 'Matt', 'John']
     })
 

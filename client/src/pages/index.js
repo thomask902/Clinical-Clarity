@@ -7,7 +7,7 @@ function Index() {
 
   // LOCAL
   // const API_BASE_URL = 'http://localhost:8080/api/home';
-  
+
   const [message, setMessage] = useState('Loading');
   const [team, setTeam] = useState([]);
 
@@ -26,7 +26,6 @@ function Index() {
   return (
     <div>
       <div>Welcome to the Clinical Clarity Next.js App!</div>
-      <div>We are team 13 :)</div>
       <div>{message}</div>
       <div>
         <h3>Our Team:</h3>
