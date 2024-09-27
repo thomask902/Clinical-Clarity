@@ -1,3 +1,39 @@
+# Flask and its dependencies
+Flask==3.0.3
+Flask-Cors==5.0.0
+itsdangerous==2.2.0
+Jinja2==3.1.4
+MarkupSafe==2.1.5
+Werkzeug==3.0.3
+
+# Basic Python utilities
+click==8.1.7
+setuptools==70.0.0
+
+# Data handling
+pandas==2.2.0
+numpy==1.26.3
+python-dateutil==2.8.2
+pytz==2023.3.post1
+
+# Requests for handling HTTP interactions
+requests==2.31.0
+urllib3==2.2.0
+idna==3.6
+certifi==2023.11.17
+
+# JSON handling
+jsonschema==4.22.0
+
+# Formatting and Parsing
+pyparsing==3.1.1
+
+# Optional: Additional data processing tools
+scikit-learn==1.4.0
+scipy==1.12.0
+
+
+''' All of my python packages (thomas) not necessary as it takes forever to load in
 absl-py==2.1.0
 altair==5.3.0
 anyio==4.3.0
@@ -150,3 +186,4 @@ webencodings==0.5.1
 websocket-client==1.8.0
 Werkzeug==3.0.3
 xgboost==2.0.3
+'''
