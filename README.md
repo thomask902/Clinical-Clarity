@@ -9,8 +9,11 @@
 #### Branches:
 
 prod: Contains the stable code that is currently in production.
+
 test: Used for testing and quality assurance before code goes to production.
+
 dev: The main development branch where integration happens.
+
 Feature branches: Individual branches for new features or bug fixes, named feature/feature-name or bugfix/issue-name.
 
 #### Branch/Feature Creation Workflow (subject to change):
@@ -24,6 +27,7 @@ After development and local testing, push to GitHub and create a Pull Request (P
 Integration:
 
 Once PRs are approved, merge feature branches into dev.
+
 Ensure all unit tests and code reviews are completed.
 
 Testing:
