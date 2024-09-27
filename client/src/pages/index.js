@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react'
 
-function index() {
+function Index() {
 
-  /*
+  // PROD
+  const API_BASE_URL = 'https://clinical-clarity-backend.onrender.com';
+
+  // LOCAL
+  // const API_BASE_URL = 'http://localhost:8080/api/home';
+
+
   const [message, setMessage] = useState("Loading");
   const [team, setTeam] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/home").then(
+    fetch(`${API_BASE_URL}/api/home`).then(
       response => response.json()
     ).then(
       data => {
@@ -19,8 +25,6 @@ function index() {
     )
   }, [])
 
-  */
-
   return (
     <div>
       <div>Welcome to the Clinical Clarity Next.js App!</div>
@@ -29,4 +33,4 @@ function index() {
   );
 }
 
-export default index;
+export default Index;
