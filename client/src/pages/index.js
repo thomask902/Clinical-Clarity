@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 
 function index() {
 
+  /*
   const [message, setMessage] = useState("Loading");
   const [team, setTeam] = useState([]);
 
@@ -18,12 +19,10 @@ function index() {
     )
   }, [])
 
+  */
+
   return (
-    <div>
-      <div>{message}</div>
-      {team.map((person, index) => (
-        <div key={index}>{person}</div>))}
-    </div>
+    <div>Welcome to the Clinical Clarity Next.js App!</div>
   );
 }
 
