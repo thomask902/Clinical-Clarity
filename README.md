@@ -4,9 +4,9 @@
 
 ### Team 13
 
-### Github Information:
+## Github Information:
 
-#### Branches:
+### Branches:
 
 prod: Contains the stable code that is currently in production.
 
@@ -49,7 +49,7 @@ git merge test
 git push origin prod
 
 
-### Frontend:
+## Frontend:
 
 to access the frontend:
 
@@ -59,7 +59,7 @@ for styling:
 
 client/src/styles/global.css
 
-### Backend:
+## Backend:
 
 to access the backend:
 
