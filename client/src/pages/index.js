@@ -26,6 +26,7 @@ function Index() {
   return (
     <div>
       <div>Welcome to the Clinical Clarity Next.js App!</div>
+      <div>This is our Management Engineering Class of 2025 Capstone Project</div>
       <div>{message}</div>
       <div>
         <h3>Our Team:</h3>
