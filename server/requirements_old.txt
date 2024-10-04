@@ -1,0 +1,42 @@
+# Flask and its dependencies
+Flask==3.0.3
+Flask-Cors==5.0.0
+itsdangerous==2.2.0
+Jinja2==3.1.4
+MarkupSafe==2.1.5
+Werkzeug==3.0.3
+python-dotenv==1.0.1
+
+# Basic Python utilities
+click==8.1.7
+setuptools==70.0.0
+
+# Data handling
+pandas==2.2.0
+numpy==1.26.3
+python-dateutil==2.8.2
+pytz==2023.3.post1
+
+# Requests for handling HTTP interactions
+requests==2.31.0
+urllib3==2.2.0
+idna==3.6
+certifi==2023.11.17
+
+# JSON handling
+jsonschema==4.22.0
+
+# Formatting and Parsing
+pyparsing==3.1.1
+
+# Additional data processing tools
+scikit-learn==1.4.0
+scipy==1.12.0
+
+# Web Server Gateway Interface HTTP Server
+gunicorn==20.1.0
+
+# supabase support
+supabase==2.8.1
+psycopg2-binary==2.9.9
+flask_sqlalchemy==3.1.1
