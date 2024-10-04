@@ -34,3 +34,8 @@ scipy==1.12.0
 
 # Web Server Gateway Interface HTTP Server
 gunicorn==20.1.0
+
+# supabase support
+supabase==2.8.1
+psycopg2-binary==2.9.9
+flask_sqlalchemy==3.1.1
