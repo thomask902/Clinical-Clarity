@@ -32,6 +32,13 @@ class Prompt(db.Model):
     def __repr__(self):
         return f"<Prompt {self.id}>"
 
+@app.route("/", methods=['GET'])
+def home():
+    return jsonify({
+        'message': "Welcome to the Flask API!",
+        'endpoints': ['/get_prompt', '/evaluate', '/api/home']
+    })
+
 # querying the database for a random prompt
 @app.route('/get_prompt', methods=['GET'])
 def get_prompt():
@@ -74,6 +81,6 @@ def return_home():
     })
 
 
-# TO RUN LOCALLY
+# FOR PROD COMMENT BELOW OUT
 if __name__ == "__main__":
     app.run(debug=True, port=8080) 
