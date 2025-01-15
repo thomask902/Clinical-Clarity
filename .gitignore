@@ -1,1 +1,5 @@
 server/cc-venv
+venv/
+myenv/
+**/.env
+server/.env
