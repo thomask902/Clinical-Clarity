@@ -1,17 +1,29 @@
-function ScenarioPage() {
+// pages/audiotest.js
+import React, { useState } from 'react';
+
+function AudioTest() {
+
+    const [counter, setCounter] = useState(0);
+
     const handleButtonClick = () => {
-        alert("Audio Response is being Recorded!");
+      // Example: increment a counter in state
+      setCounter(prev => prev + 1);
+
+      // Or show an alert
+      alert("Scenario Button Clicked!");
     };
-   
+
     return (
         <div>
             <h1>
-                Welcome to the Scenario Page
+                Welcome to the Audio Test Page
             </h1>
             <br></br>
             <p>
                 Please click the below button to record your audio response:
             </p>
+            <br></br>
+            <p>Counter: {counter}</p>
             <br></br>
             <button onClick={handleButtonClick}
                 style={{
@@ -28,3 +40,5 @@ function ScenarioPage() {
 
     );
 }
+
+export default AudioTest;
