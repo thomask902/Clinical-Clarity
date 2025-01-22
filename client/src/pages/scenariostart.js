@@ -1,25 +1,55 @@
 import { useRouter } from 'next/router';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export default function NewPage() {
+export default function ScenarioStartPage() {
+  const API_BASE_URL = 'http://localhost:8080';
   const router = useRouter();
-  const [isPopupVisible, setIsPopupVisible] = useState(false); // State to track popup visibility
-  const popupRef = useRef(null); // Reference to the popup for detecting outside clicks
+  const [scenario, setScenario] = useState(null);
+  const [isPopupVisible, setIsPopupVisible] = useState(false); // State for popup visibility
+  const popupRef = useRef(null); // Reference for popup clicks
 
-
-  // Handle clicking outside of the popup
+  // Fetch scenario details
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
-        setIsPopupVisible(false); // Hide popup if clicking outside
+    const fetchScenario = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/get_prompt/1`); // Replace 1 with dynamic ID
+        const data = await response.json();
+
+        if (data.error) {
+          console.error(data.error);
+          return;
+        }
+
+        setScenario(data.scenario);
+      } catch (error) {
+        console.error('Error fetching scenario:', error);
       }
-    }
+    };
+
+    fetchScenario();
+  }, []);
+
+  // Handle clicking outside of popup
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setIsPopupVisible(false);
+      }
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  if (!scenario) {
+    return (
+      <div style={{ textAlign: 'center', padding: '20px' }}>
+        <h1>Loading Scenario...</h1>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -46,7 +76,7 @@ export default function NewPage() {
         <img
           src="/ClinicalClarityLogo.png"
           alt="Clinical Clarity Logo"
-          style={{ height: '70px', marginRight: '5px' }}
+          style={{ height: '70px', marginLeft: '10px' }}
         />
       </div>
 
@@ -60,17 +90,17 @@ export default function NewPage() {
           minHeight: '87vh',
           textAlign: 'center',
           flexDirection: 'column',
-          position: 'relative', // Needed for popup positioning
+          position: 'relative',
         }}
       >
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '20px', // Space between text and button
+            gap: '20px',
           }}
         >
-          <h1>Welcome to the start of a Patient Scenario Page!</h1>
+          <h1>Welcome to the start of the scenario!</h1>
           {/* Settings Button */}
           <button
             onClick={() => setIsPopupVisible(!isPopupVisible)}
@@ -82,81 +112,89 @@ export default function NewPage() {
             }}
           >
             <img
-              src="/SettingsWheel.png" // Path to the settings wheel in the public folder
+              src="/SettingsWheel.png"
               alt="Settings"
-              style={{ height: '160px'}} // Adjust size of the settings icon
+              style={{ height: '60px' }}
             />
           </button>
+        </div>
+
+        {/* Scenario Details */}
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <h2>{scenario.title}</h2>
+          <p><strong>Description:</strong> {scenario.description}</p>
+          <p><strong>Door Sign:</strong> {scenario.door_sign}</p>
         </div>
 
         {/* Popup */}
         {isPopupVisible && (
           <div
-            ref={popupRef} // Attach the popup to the ref
+            ref={popupRef}
             style={{
-              position: 'fixed', // Fixed position to center it on the screen
+              position: 'fixed',
               top: '50%',
               left: '50%',
-              transform: 'translate(-50%, -50%)', // Center the popup
+              transform: 'translate(-50%, -50%)',
               backgroundColor: 'white',
               border: '2px solid black',
               borderRadius: '10px',
-              width: '400px', // Adjust width
-              height: '300px', // Adjust height
+              width: '400px',
+              height: '300px',
               padding: '20px',
               boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-              zIndex: 1000, // Ensure it appears on top of other elements
+              zIndex: 1000,
             }}
           >
             <p style={{ margin: 0, textAlign: 'center', fontSize: '18px' }}>Settings Menu</p>
           </div>
         )}
-<br/>
-<div
-  style={{
-    display: 'flex', // Align buttons in a row
-    justifyContent: 'center', // Center the buttons horizontally
-    alignItems: 'center', // Align buttons vertically
-    gap: '20px', // Add spacing between the buttons
-    marginTop: '20px', // Add spacing above the button row
-  }}
->
-  {/* Back to Home Button */}
-  <button
-    onClick={() => router.push('/')} // Redirect to home page
-    style={{
-      border: '2px solid black',
-      padding: '10px',
-      borderRadius: '15px',
-      fontSize: '16px',
-      width: '180px',
-      height: '80px',
-      cursor: 'pointer',
-      backgroundColor: '#0070f3',
-      color: 'white',
-    }}
-  >
-    Back to Home
-  </button>
 
-  {/* Start Button */}
-  <button
-    onClick={() => alert('Start button clicked!')} // Replace with desired functionality
-    style={{
-      border: '2px solid black',
-      padding: '10px',
-      borderRadius: '15px',
-      fontSize: '16px',
-      width: '180px',
-      height: '80px',
-      cursor: 'pointer',
-      backgroundColor: '#0070f3',
-      color: 'white',
-    }}
-  >
-    Start
-  </button>
-</div>
+        {/* Action Buttons */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '20px',
+            marginTop: '20px',
+          }}
+        >
+          {/* Back to Home Button */}
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              border: '2px solid black',
+              padding: '10px',
+              borderRadius: '15px',
+              fontSize: '16px',
+              width: '180px',
+              height: '80px',
+              cursor: 'pointer',
+              backgroundColor: '#0070f3',
+              color: 'white',
+            }}
+          >
+            Back to Home
+          </button>
+
+          {/* Start Button */}
+          <button
+            onClick={() => router.push('/scenario')}
+            style={{
+              border: '2px solid black',
+              padding: '10px',
+              borderRadius: '15px',
+              fontSize: '16px',
+              width: '180px',
+              height: '80px',
+              cursor: 'pointer',
+              backgroundColor: '#0070f3',
+              color: 'white',
+            }}
+          >
+            Start Scenario
+          </button>
+        </div>
       </div>
     </div>
   );
