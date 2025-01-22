@@ -23,16 +23,16 @@ function Index() {
       try {
         const [homeResponse, promptResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/api/home`),
-          fetch(`${API_BASE_URL}/get_prompt`)
+          fetch(`${API_BASE_URL}/get_prompt/1`) // here '1' is the scenario id being fetched
         ]);
         
         const homeData = await homeResponse.json();
-        const promptData = await promptResponse.json();
+        
   
         // Update state with data from both responses
         setMessage(homeData.message);
         setTeam(homeData.team);
-        setPrompt(promptData);
+      
         
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -120,38 +120,6 @@ function Index() {
             <li key={index}>{member}</li>
           ))}
         </ul>
-      </div>
-      <div><br/>Your Prompt: {prompt.prompt_text}</div>
-      <div>
-      <br />
-      <input
-        type="text"
-        value={userInput}
-        onChange={e => setUserInput(e.target.value)}
-        placeholder="Type your answer here"
-        style={{
-          border: '2px solid',  // Adds a green border
-          padding: '10px',              // Adds padding inside the input box
-          borderRadius: '5px',          // Rounds the corners
-          fontSize: '16px',             // Changes font size
-          width: '300px',                // Makes the input take the full width of its container
-          height: '40px',               // Makes the input box 40px tall
-        }}
-      />
-      </div>
-      <div>
-      <br />
-      <button 
-        onClick={submitResponse}
-        style={{
-          border: '2px solid',  // Adds a green border
-          padding: '4px',              // Adds padding inside the input box
-          borderRadius: '5px',          // Rounds the corners
-          fontSize: '14px',             // Changes font size
-          width: '60px',                // Makes the button 40px wide
-          height: '40px',               // Makes the button 40px tall
-        }}
-      >Check</button>
       </div>
       <div>
       <br />
