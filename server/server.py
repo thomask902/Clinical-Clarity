@@ -81,6 +81,14 @@ def return_home():
     })
 
 
+# scenario button clicked
+@app.route('/do_something', methods=['POST'])
+def do_something():
+    # This is where you run server-side logic e.g., process data, update a database, etc.
+    # For demo, just return a JSON response
+    return jsonify({"message": "Flask says it did something!"}), 200
+
+
 # FOR PROD COMMENT BELOW OUT
 if __name__ == "__main__":
     app.run(debug=True, port=8080) 
