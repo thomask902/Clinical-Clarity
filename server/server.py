@@ -110,6 +110,6 @@ def return_home():
     })
 
 # FOR PROD COMMENT BELOW OUT
-if __name__ == "__main__":
-    app.run(debug=True, port=8080)
+#if __name__ == "__main__":
+#    app.run(debug=True, port=8080)
 
