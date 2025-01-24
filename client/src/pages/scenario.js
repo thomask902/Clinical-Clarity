@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 
 export default function ScenarioPage() {
-  const API_BASE_URL = 'http://localhost:8080';
+  // PROD
+  const API_BASE_URL = 'https://clinical-clarity-backend.onrender.com';
+
+  // LOCAL
+  //const API_BASE_URL = 'http://localhost:8080';
+  
   const [prompts, setPrompts] = useState([]);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
