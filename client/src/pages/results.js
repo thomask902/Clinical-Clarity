@@ -14,7 +14,7 @@ export default function NewPage() {
         flexDirection: 'column',
       }}
     >
-      <h1>Here are the results for your Clincal Scenario!</h1>
+      <h1>Here are the results for your Clincal Scenario! Good job!</h1>
       <p>This is the destination page after clicking the See Results Button.</p>
       <button
         onClick={() => router.push('/')} // Redirect back to home page
