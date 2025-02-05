@@ -109,6 +109,21 @@ def return_home():
         'team': ['Thomas', 'Saleh', 'Abhinav', 'Matt', 'John']
     })
 
+# Score/Result of the User
+score = 85
+correct_answers = 44
+total_questions = 52
+
+@app.route("/api/results", methods=['GET'])
+def get_results():
+    results = {
+        "score": score,
+        "correct_answers": correct_answers,
+        "total_questions": total_questions,
+        "feedback": "Great job! You scored above 80%."
+    }
+    return jsonify(results)
+
 # FOR PROD COMMENT BELOW OUT
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
