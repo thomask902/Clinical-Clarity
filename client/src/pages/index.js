@@ -11,9 +11,6 @@ function Index() {
 
   const [message, setMessage] = useState('Loading');
   const [team, setTeam] = useState([]);
-  const [prompt, setPrompt] = useState('Loading prompt...');
-  const [userInput, setUserInput] = useState('');
-  const [result, setResult] = useState('');
 
   const router = useRouter(); // Initialize the router
 
@@ -41,32 +38,6 @@ function Index() {
   
     fetchData();
   }, []);
-
-  const submitResponse = () => {
-    if (!prompt) {
-      alert('Prompt is not loaded yet.');
-      return;
-    }
-    
-    fetch(`${API_BASE_URL}/evaluate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_input: userInput,
-        prompt_id: prompt.id
-      })
-    })
-      .then(response => response.json())
-      .then(data => {
-        // Handle the evaluation result
-        if (data.is_correct) {
-          setResult('Correct!')
-        } else {
-          setResult('False!');
-        }
-      })
-      .catch(error => console.error('Error evaluating response:', error));
-  };
 
   return (
     <div>
@@ -120,10 +91,6 @@ function Index() {
             <li key={index}>{member}</li>
           ))}
         </ul>
-      </div>
-      <div>
-      <br />
-      {result}
       </div>
       <div
   style={{
