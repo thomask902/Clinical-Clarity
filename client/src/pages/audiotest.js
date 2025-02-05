@@ -1,16 +1,32 @@
 // pages/audiotest.js
 import React, { useState } from 'react';
+import AudioRecorder from '../components/AudioRecorder';
 
-function AudioTest() {
+function AudioTestPage() {
+    const API_BASE_URL = 'http://localhost:8080'
 
-    const [counter, setCounter] = useState(0);
+    const [isRecording, setIsRecording] = useState(false);
 
-    const handleButtonClick = () => {
-      // Example: increment a counter in state
-      setCounter(prev => prev + 1);
+    // const [counter, setCounter] = useState(0);
 
-      // Or show an alert
-      alert("Scenario Button Clicked!");
+    const handleButtonClick = async () => {
+        try {
+            // Make a POST request to your Flask endpoint
+            const response = await fetch(API_BASE_URL + '/do_something', {
+                method: 'POST'
+            });
+          
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+    
+        const data = await response.json();
+        
+        alert(`Server says: ${data.message}`);
+
+        } catch (error) {
+          console.error('Error calling Flask:', error);
+        }
     };
 
     return (
@@ -23,22 +39,13 @@ function AudioTest() {
                 Please click the below button to record your audio response:
             </p>
             <br></br>
-            <p>Counter: {counter}</p>
             <br></br>
-            <button onClick={handleButtonClick}
-                style={{
-                    padding: "10px 20px",
-                    border: "2px solid black",
-                    borderRadius: "5px",
-                    backgroundColor: "white",
-                    cursor: "pointer",
-                    fontSize: "16px",
-              }}>
-                Answer Prompt</button>
+            <br></br>
+            <h1>Audio Recorder:</h1>
+            <AudioRecorder />
         </div>
-
-
     );
 }
 
-export default AudioTest;
+
+export default AudioTestPage;
