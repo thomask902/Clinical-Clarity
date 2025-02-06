@@ -1,3 +1,17 @@
+"""
+server.py - Handles the server-side logic for loading the model and evaluating responses.
+
+1. Loads the model when server.js is started.
+2. Implements the /evaluate API:
+   - Uses the loaded model to detect semantic similarity.
+   - A threshold of 0.6 is set to determine correctness (response is correct if similarity >= 0.6).
+   - The API returns not only a boolean (correct/false) but also the similarity score
+3. Implements a very naive implementation of total score tracking:
+   - Stores correctness results in a global list. The /get_results API retrieves this score data.
+   - This approach is temporary and will break when multiple users interact with the system.
+
+"""
+
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc

@@ -1,8 +1,7 @@
 /*
 Scenario Page
 submitResponse - called when the check button is clicked or the next prompt button if no check has been done
-moveToNextPrompt - checks to see if answer has been checked already 
-
+moveToNextPrompt - checks to see if answer has been checked already, if not, evaluates it, then moves to next prompt after a delay
 */
 
 
@@ -12,6 +11,8 @@ import { useRouter } from 'next/router'; // Import Next.js useRouter hook
 export default function ScenarioPage() {
   const router = useRouter();
   const API_BASE_URL = 'http://localhost:8080';
+
+  // variables
   const [prompts, setPrompts] = useState([]);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
@@ -19,7 +20,7 @@ export default function ScenarioPage() {
   const [showResultsButton, setShowResultsButton] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
 
-  // added for increased understanding of model behaviour
+  // added for increased understanding of model behaviour, can remove later
   const [score, setScore] = useState('');
 
   useEffect(() => {
