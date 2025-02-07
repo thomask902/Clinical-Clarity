@@ -3,11 +3,8 @@ import { useRouter } from 'next/router'; // Import Next.js useRouter hook
 
 function Index() {
 
-  // PROD
-  const API_BASE_URL = 'https://clinical-clarity-backend.onrender.com';
-
-  // LOCAL
-  //const API_BASE_URL = 'http://localhost:8080';
+  // Access the API base URL from the environment variable
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const [message, setMessage] = useState('Loading');
   const [team, setTeam] = useState([]);
