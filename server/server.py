@@ -30,6 +30,9 @@ CORS(app)
 # Load environment variables
 load_dotenv()
 
+# Determine if running in production
+FLASK_ENV = os.environ.get("FLASK_ENV", "production")
+
 # DB SETUP
 # Set up the database URI (use environment variable)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
@@ -162,7 +165,6 @@ def get_results():
     }
     return jsonify(results)
 
-# FOR PROD COMMENT BELOW OUT
-if __name__ == "__main__":
+# this will run for local development
+if __name__ == "__main__" and FLASK_ENV == "development":
     app.run(debug=True, port=8080)
-
