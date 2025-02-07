@@ -10,7 +10,9 @@ import { useRouter } from 'next/router'; // Import Next.js useRouter hook
 
 export default function ScenarioPage() {
   const router = useRouter();
-  const API_BASE_URL = 'http://localhost:8080';
+  
+  // Access the API base URL from the environment variable
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   // variables
   const [prompts, setPrompts] = useState([]);
