@@ -2,7 +2,12 @@ import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
 
 export default function ScenarioStartPage() {
-  const API_BASE_URL = 'http://localhost:8080';
+  // PROD
+  const API_BASE_URL = 'https://clinical-clarity-backend.onrender.com';
+
+  // LOCAL
+  //const API_BASE_URL = 'http://localhost:8080';
+  
   const router = useRouter();
   const [scenario, setScenario] = useState(null);
   const [isPopupVisible, setIsPopupVisible] = useState(false); // State for popup visibility
