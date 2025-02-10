@@ -1,3 +1,17 @@
+"""
+server.py - Handles the server-side logic for loading the model and evaluating responses.
+
+1. Loads the model when server.js is started.
+2. Implements the /evaluate API:
+   - Uses the loaded model to detect semantic similarity.
+   - A threshold of 0.6 is set to determine correctness (response is correct if similarity >= 0.6).
+   - The API returns not only a boolean (correct/false) but also the similarity score
+3. Implements a very naive implementation of total score tracking:
+   - Stores correctness results in a global list. The /get_results API retrieves this score data.
+   - This approach is temporary and will break when multiple users interact with the system.
+
+"""
+
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc
@@ -10,12 +24,19 @@ import numpy as np
 import librosa
 import tempfile
 
+# for model
+from scipy.spatial import distance
+from sentence_transformers import SentenceTransformer
+
 # App instance
 app = Flask(__name__)
 CORS(app)
 
 # Load environment variables
 load_dotenv()
+
+# Determine if running in production
+FLASK_ENV = os.environ.get("FLASK_ENV", "production")
 
 # DB SETUP
 # Set up the database URI (use environment variable)
@@ -24,9 +45,17 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+<<<<<<< HEAD
 
 whisper_model = whisper.load_model("tiny")
 
+=======
+# load in model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# naive global score storage
+result_vec = []
+>>>>>>> 10665b4ee5294e4c9ca31cd931738de92a379c91
 
 # Define the Scenario table
 class Scenario(db.Model):
@@ -105,10 +134,24 @@ def evaluate():
     if not prompt:
         return jsonify({'error': 'Prompt not found'}), 404
 
-    # Compare user input with the ideal response
-    is_correct = user_input.strip().lower() == prompt.expected_response.strip().lower()
+    # Encode vectors of response and target
+    expected_vec = model.encode([prompt.expected_response])[0]
+    user_vec = model.encode([user_input])[0]
 
-    return jsonify({'is_correct': is_correct})
+    # Compute cosine similarity (the closer to 1, the more similar)
+    similarity_score = 1 - distance.cosine(user_vec, expected_vec)
+    print(f"Similarity score: {similarity_score}")
+
+    # Threshold to determine correct or not
+    threshold = 0.6
+    is_correct = similarity_score >= threshold
+    result_vec.append(is_correct)
+
+    print(f"Correct? {is_correct}")
+    print(f"Results Vector: {result_vec}")
+
+    return jsonify({'is_correct': bool(is_correct),
+                    'score': f"{int(similarity_score * 100)}%"})
 
 # /api/home endpoint
 @app.route("/api/home", methods=['GET'])
@@ -118,31 +161,20 @@ def return_home():
         'team': ['Thomas', 'Saleh', 'Abhinav', 'Matt', 'John']
     })
 
-# Score/Result of the User
-score = 85
-correct_answers = 44
-total_questions = 52
-
 @app.route("/api/results", methods=['GET'])
 def get_results():
+    # Score/Result of the User
+    correct_answers = sum(result_vec)
+    total_questions = len(result_vec)
+    score = correct_answers / total_questions
+
     results = {
         "score": score,
-        "correct_answers": correct_answers,
+        "correct_answers": int(correct_answers),
         "total_questions": total_questions,
-        "feedback": "Great job! You scored above 80%."
+        "feedback": "Great job!"
     }
     return jsonify(results)
-
-
-def upload_audio():
-    audio_file = request.files.get('audio')
-    if not audio_file:
-        return jsonify({'error': 'No audio file uploaded'}), 400
-
-
-
-
-
 
 # API to get audio file from user input
 @app.route('/upload_audio', methods=['POST'])
@@ -182,5 +214,7 @@ def upload_audio():
 
 # FOR PROD COMMENT BELOW OUT
 if __name__ == "__main__":
+# this will run for local development
+if __name__ == "__main__" and FLASK_ENV == "development":
     app.run(debug=True, port=8080)
 
