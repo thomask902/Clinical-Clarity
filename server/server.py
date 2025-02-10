@@ -1,6 +1,7 @@
 """
 server.py - Handles the server-side logic for loading the model and evaluating responses.
 
+ML Workflow
 1. Loads the model when server.js is started.
 2. Implements the /evaluate API:
    - Uses the loaded model to detect semantic similarity.
@@ -10,6 +11,11 @@ server.py - Handles the server-side logic for loading the model and evaluating r
    - Stores correctness results in a global list. The /get_results API retrieves this score data.
    - This approach is temporary and will break when multiple users interact with the system.
 
+   
+Scenario Workflow STT:
+1. The user clicks the button "upload audio", which triggers the upload_audio API post request to send user response audio data to the backend
+2. breaksdown the user response using Open AI Whisper, transcirbes into text
+3. sends text transcription back to front end
 """
 
 from flask import Flask, jsonify, request
@@ -31,6 +37,7 @@ from sentence_transformers import SentenceTransformer
 # App instance
 app = Flask(__name__)
 CORS(app)
+
 
 # Load environment variables
 load_dotenv()
@@ -173,7 +180,7 @@ def get_results():
     }
     return jsonify(results)
 
-# API to get audio file from user input
+# API to get audio file from user input, transcribe it, return to front end
 @app.route('/upload_audio', methods=['POST'])
 def upload_audio():
 
@@ -196,7 +203,6 @@ def upload_audio():
     with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
         temp_path = tmp.name
         audio_file.save(temp_path)
-
 
     try:
         # Now pass the file stored to Whisper

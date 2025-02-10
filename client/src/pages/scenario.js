@@ -1,7 +1,26 @@
 /*
-Scenario Page
-submitResponse - called when the check button is clicked or the next prompt button if no check has been done
-moveToNextPrompt - checks to see if answer has been checked already, if not, evaluates it, then moves to next prompt after a delay
+Scenario Page:
+
+Page where the scenarios are simulated for a patient interaction
+
+
+Functions:
+
+submitResponse:
+- called when the check button is clicked or the next prompt button if no check has been done
+
+moveToNextPrompt:
+- checks to see if answer has been checked already, if not, evaluates it, then moves to next prompt after a delay
+
+handleTranscriptionReady:
+- When a transcript is ready, callback function to get this data from Child (AudiRecorder component)
+- this updates the userInput variable using setUserInput
+
+
+Returns:
+
+Simulated scenario, options to evaluate response, move to next prompt, etc
+
 */
 
 
@@ -23,8 +42,7 @@ export default function ScenarioPage() {
   const [showResultsButton, setShowResultsButton] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
   
-  // audio recorder vars
-  const [isRecording, setIsRecording] = useState(false);
+  // audio recorder vars, not currently used: const [isRecording, setIsRecording] = useState(false);
 
   // added for increased understanding of model behaviour, can remove later
   const [score, setScore] = useState('');
@@ -144,39 +162,29 @@ export default function ScenarioPage() {
     );
   }
 
-  // Callback the child calls when a transcript is ready
+  // When a transcript is ready, callback function to get this data from Child (AudiRecorder component)
   function handleTranscriptReady(transcript) {
     // Put the transcript into userInput
     setUserInput(transcript);
   }
 
-  const handleButtonClick = async () => {
-    try {
-        // Make a POST request to your Flask endpoint
-        const response = await fetch(API_BASE_URL + '/do_something', {
-            method: 'POST'
-        });
-      
-    if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    alert(`Server says: ${data.message}`);
-
-    } catch (error) {
-      console.error('Error calling Flask:', error);
-    }
-  };
-
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <div style={{ marginBottom: '20px' }}>
+    <div 
+      style={{
+        fontFamily: 'Arial, sans-serif', 
+        maxWidth: '800px', 
+        margin: '0 auto', 
+        padding: '20px' }}
+    >
+      <div 
+        style= {{ marginBottom: '20px' }}
+      >
         <h3>Prompt:</h3>
         <p>{prompts[currentPromptIndex]?.patient_prompt}</p>
       </div>
-      <div style={{ marginBottom: '20px' }}>
+      <div 
+        style={{ marginBottom: '20px' }}
+      >
         <input
           type="text"
           value={userInput}

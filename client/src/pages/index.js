@@ -1,3 +1,20 @@
+/*
+Base URL Page:
+
+Home page where the the user can select what they want to do
+
+
+Functions:
+
+TODO
+
+
+Returns:
+
+Home Page, buttons that route to different pieces of functionality our product has
+
+*/
+
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'; // Import Next.js useRouter hook
 
@@ -6,11 +23,11 @@ function Index() {
   // Access the API base URL from the environment variable
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+  // variables
   const [message, setMessage] = useState('Loading');
   const [team, setTeam] = useState([]);
 
   const router = useRouter(); // Initialize the router
-
 
   useEffect(() => {
     const fetchData = async () => {
