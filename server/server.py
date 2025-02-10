@@ -4,6 +4,11 @@ from sqlalchemy.sql.expression import asc
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
+import whisper
+import io
+import numpy as np
+import librosa
+import tempfile
 
 # App instance
 app = Flask(__name__)
@@ -18,6 +23,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+
+whisper_model = whisper.load_model("tiny")
+
 
 # Define the Scenario table
 class Scenario(db.Model):
@@ -124,14 +133,52 @@ def get_results():
     }
     return jsonify(results)
 
-@app.route('/do_something', methods=['POST'])
-def do_something():
-    # This is where you run server-side logic
-    # e.g., process data, update a database, etc.
-    # For demo, just return a JSON response
-    return jsonify({"message": "Flask says it did something!"}), 200
+
+def upload_audio():
+    audio_file = request.files.get('audio')
+    if not audio_file:
+        return jsonify({'error': 'No audio file uploaded'}), 400
 
 
+
+
+
+
+# API to get audio file from user input
+@app.route('/upload_audio', methods=['POST'])
+def upload_audio():
+
+    # audio file
+    audio_file = request.files.get('audio')
+
+    # return 400 Bad Request error
+    if not audio_file:
+        return jsonify({'error': 'No audio file uploaded'}), 400
+    
+    # save file under recordings/ folder
+    #save_path = os.path.join("recordings", "recording.wav")
+    #audio_file.save(save_path)
+
+    # Read all bytes from the uploaded file
+    #audio_bytes = audio_file.read()
+    #audio_buffer = io.BytesIO(audio_bytes)
+    #audio_buffer.seek(0)  # Ensure pointer is at the start
+
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+        temp_path = tmp.name
+        audio_file.save(temp_path)
+
+
+    try:
+        # Now pass the file stored to Whisper
+        result = whisper_model.transcribe(temp_path)
+        print(result["text"])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    os.remove(temp_path)
+
+    return jsonify({'transcript': result["text"]}), 200
 
 # FOR PROD COMMENT BELOW OUT
 if __name__ == "__main__":

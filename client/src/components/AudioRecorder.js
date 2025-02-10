@@ -33,14 +33,15 @@ function AudioRecorder() {
             // Event that fires everytime the MediaRecorder has a chunk of recorded audio available
             // e.data contains the audio chunk, whihc is saved in chunksRef
             mediaRecorder.ondataavailable = (e) => {
+                console.log("Chunk type is:", e.data.type);
                 chunksRef.current.push(e.data);
             };
 
             // onstop = Event that fires everytime the recording stops. 
             mediaRecorder.onstop = () => {
                 
-                // create a blob: combines chunks of audio into single blob in the OGG format
-                const blob = new Blob(chunksRef.current, { type: 'audio/ogg; codecs=opus' });
+                // create a blob: combines chunks of audio into single blob in the WAV format
+                const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
                 
                 // reset chunks to prepare for next recording
                 chunksRef.current = [];
@@ -84,8 +85,6 @@ function AudioRecorder() {
     
     // checks if recording exists before uploading
     if (!audioBlob) {
-
-        // 
         alert('No audio recorded!');
         return;
     }
@@ -93,8 +92,8 @@ function AudioRecorder() {
     // formData = way to construct a set of key/value pairs represnting form fields and values
     const formData = new FormData();
 
-    // key='audio', value=audioBlob, filename='recording.ogg' (only have filename parameter when passing a File as the second parameter)
-    formData.append('audio', audioBlob, 'recording.ogg');
+    // key='audio', value=audioBlob, filename='recording.wav' (only have filename parameter when passing a File as the second parameter)
+    formData.append('audio', audioBlob, 'recording.webm');
 
     // try this
     try {
@@ -105,17 +104,25 @@ function AudioRecorder() {
             body: formData,
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-            alert('Audio uploaded successfully!');
+            alert(`Audio uploaded successfully! The transcription is: ${data.transcript}`);
+
         } else {
-            console.error('Failed to upload:', response.statusText);
+            console.error(`Failed to upload:`, data.error);
         }
+
     // if error
     } catch (err) {
         console.error('Error uploading audio:', err);
     }
 };
+    // button 1: disabled = if already recording
+    // button 2: disabled = if already not recording
 
+    // if an audioURL exists, display it susing the <audio> function
+    // uploadAudio is the fucntion i made to upload it to the backend. That gets called when click Upload audio button
     return (
         <div>
             <button onClick={startRecording} disabled={isRecording}                 
@@ -143,7 +150,16 @@ function AudioRecorder() {
             {audioURL && (
                 <div>
                     <audio controls src={audioURL}></audio>
-                    <button onClick={uploadAudio}>Upload Audio</button>
+                    <button onClick={uploadAudio}
+                        style={{
+                            padding: "10px 20px",
+                            border: "2px solid black",
+                            borderRadius: "5px",
+                            backgroundColor: "white",
+                            cursor: "pointer",
+                            fontSize: "16px",
+                        }}>
+                            Upload Audio</button>
                 </div>
             )}
         </div>
