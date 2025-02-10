@@ -7,6 +7,7 @@ moveToNextPrompt - checks to see if answer has been checked already, if not, eva
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router'; // Import Next.js useRouter hook
+import AudioRecorder from '../components/AudioRecorder';
 
 export default function ScenarioPage() {
   const router = useRouter();
@@ -21,6 +22,9 @@ export default function ScenarioPage() {
   const [result, setResult] = useState('');
   const [showResultsButton, setShowResultsButton] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
+  
+  // audio recorder vars
+  const [isRecording, setIsRecording] = useState(false);
 
   // added for increased understanding of model behaviour, can remove later
   const [score, setScore] = useState('');
@@ -140,6 +144,32 @@ export default function ScenarioPage() {
     );
   }
 
+  // Callback the child calls when a transcript is ready
+  function handleTranscriptReady(transcript) {
+    // Put the transcript into userInput
+    setUserInput(transcript);
+  }
+
+  const handleButtonClick = async () => {
+    try {
+        // Make a POST request to your Flask endpoint
+        const response = await fetch(API_BASE_URL + '/do_something', {
+            method: 'POST'
+        });
+      
+    if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    alert(`Server says: ${data.message}`);
+
+    } catch (error) {
+      console.error('Error calling Flask:', error);
+    }
+  };
+
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
       <div style={{ marginBottom: '20px' }}>
@@ -151,7 +181,7 @@ export default function ScenarioPage() {
           type="text"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
-          placeholder="Type your answer here"
+          placeholder="Type your answer OR use audio"
           style={{
             border: '2px solid black',
             padding: '10px',
@@ -162,6 +192,7 @@ export default function ScenarioPage() {
         />
       </div>
       <div style={{ display: 'flex', gap: '10px' }}>
+      <AudioRecorder onTranscriptReady={handleTranscriptReady} />
   {/* Show "Check" and "Next Prompt" buttons only if not at the last prompt */}
   {!showResultsButton && (
     <>

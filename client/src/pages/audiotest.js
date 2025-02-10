@@ -5,7 +5,7 @@ import AudioRecorder from '../components/AudioRecorder';
 function AudioTestPage() {
     const API_BASE_URL = 'http://localhost:8080'
 
-    const [isRecording, setIsRecording] = useState(false);
+    
 
     // const [counter, setCounter] = useState(0);
 

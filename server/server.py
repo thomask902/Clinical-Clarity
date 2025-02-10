@@ -45,17 +45,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-<<<<<<< HEAD
 
 whisper_model = whisper.load_model("tiny")
 
-=======
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # naive global score storage
 result_vec = []
->>>>>>> 10665b4ee5294e4c9ca31cd931738de92a379c91
 
 # Define the Scenario table
 class Scenario(db.Model):
@@ -212,8 +209,7 @@ def upload_audio():
 
     return jsonify({'transcript': result["text"]}), 200
 
-# FOR PROD COMMENT BELOW OUT
-if __name__ == "__main__":
+    
 # this will run for local development
 if __name__ == "__main__" and FLASK_ENV == "development":
     app.run(debug=True, port=8080)

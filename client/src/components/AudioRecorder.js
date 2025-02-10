@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-function AudioRecorder() {
+function AudioRecorder({ onTranscriptReady }) {
     const API_BASE_URL = 'http://localhost:8080'
 
     // if the microphone is recording or not: true/false
@@ -107,7 +107,12 @@ function AudioRecorder() {
         const data = await response.json();
 
         if (response.ok) {
-            alert(`Audio uploaded successfully! The transcription is: ${data.transcript}`);
+            alert(`The transcription is: ${data.transcript}`);
+            
+            //update call back function in scenario page
+            if (onTranscriptReady) {
+                onTranscriptReady(data.transcript);
+            }
 
         } else {
             console.error(`Failed to upload:`, data.error);
@@ -149,7 +154,6 @@ function AudioRecorder() {
             </button>
             {audioURL && (
                 <div>
-                    <audio controls src={audioURL}></audio>
                     <button onClick={uploadAudio}
                         style={{
                             padding: "10px 20px",
