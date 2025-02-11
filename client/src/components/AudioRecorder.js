@@ -43,12 +43,6 @@ function AudioRecorder({ onTranscriptReady }) {
     const mediaRecorderRef = useRef(null); // Media recorder instance, useRef to not re initialize it everytime
     const chunksRef = useRef([]); // array of chunks of audio recorded during recording process. when recording stops, combines into single audio file
 
-    // formData = way to construct a set of key/value pairs represnting form fields and values
-    const formData = new FormData();
-
-    // key='audio', value=audioBlob, filename='recording.wav' (only have filename parameter when passing a File as the second parameter)
-    formData.append('audio', audioBlob, 'recording.webm');
-
     // startRecording: function, triggered on button click
     const startRecording = async () => {
         try {
@@ -100,6 +94,12 @@ function AudioRecorder({ onTranscriptReady }) {
             return;
         }
 
+        // formData = way to construct a set of key/value pairs represnting form fields and values
+        const formData = new FormData();
+
+        // key='audio', value=audioBlob, filename='recording.wav' (only have filename parameter when passing a File as the second parameter)
+        formData.append('audio', audioBlob, 'recording.webm');
+
         try {
             // post request to Flask backend
             // post = sending data to backend
@@ -113,7 +113,7 @@ function AudioRecorder({ onTranscriptReady }) {
             if (response.ok) {
                 alert(`The transcription is: ${data.transcript}`); // transcript is the key to the JSON returned by the backend
                 
-                //update call back function in scenario page
+                // update call back function in scenario page
                 if (onTranscriptReady) {
                     onTranscriptReady(data.transcript);
                 }
