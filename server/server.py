@@ -1,6 +1,7 @@
 """
 server.py - Handles the server-side logic for loading the model and evaluating responses.
 
+ML Workflow
 1. Loads the model when server.js is started.
 2. Implements the /evaluate API:
    - Uses the loaded model to detect semantic similarity.
@@ -10,6 +11,11 @@ server.py - Handles the server-side logic for loading the model and evaluating r
    - Stores correctness results in a global list. The /get_results API retrieves this score data.
    - This approach is temporary and will break when multiple users interact with the system.
 
+   
+Scenario Workflow STT:
+1. The user clicks the button "upload audio", which triggers the upload_audio API post request to send user response audio data to the backend
+2. breaksdown the user response using Open AI Whisper, transcirbes into text
+3. sends text transcription back to front end
 """
 
 from flask import Flask, jsonify, request
@@ -18,6 +24,11 @@ from sqlalchemy.sql.expression import asc
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
+import whisper
+import io
+import numpy as np
+import librosa
+import tempfile
 
 # for model
 from scipy.spatial import distance
@@ -26,6 +37,7 @@ from sentence_transformers import SentenceTransformer
 # App instance
 app = Flask(__name__)
 CORS(app)
+
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +51,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+
+whisper_model = whisper.load_model("tiny")
 
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -165,6 +180,42 @@ def get_results():
     }
     return jsonify(results)
 
+# API to get audio file from user input, transcribe it, return to front end
+@app.route('/upload_audio', methods=['POST'])
+def upload_audio():
+
+    # audio file
+    audio_file = request.files.get('audio')
+
+    # return 400 Bad Request error
+    if not audio_file:
+        return jsonify({'error': 'No audio file uploaded'}), 400
+    
+    # save file under recordings/ folder
+    #save_path = os.path.join("recordings", "recording.wav")
+    #audio_file.save(save_path)
+
+    # Read all bytes from the uploaded file
+    #audio_bytes = audio_file.read()
+    #audio_buffer = io.BytesIO(audio_bytes)
+    #audio_buffer.seek(0)  # Ensure pointer is at the start
+
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+        temp_path = tmp.name
+        audio_file.save(temp_path)
+
+    try:
+        # Now pass the file stored to Whisper
+        result = whisper_model.transcribe(temp_path)
+        print(result["text"])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    os.remove(temp_path)
+
+    return jsonify({'transcript': result["text"]}), 200
+
+    
 # this will run for local development
 if __name__ == "__main__" and FLASK_ENV == "development":
     app.run(debug=True, port=8080)

@@ -1,12 +1,32 @@
 /*
-Scenario Page
-submitResponse - called when the check button is clicked or the next prompt button if no check has been done
-moveToNextPrompt - checks to see if answer has been checked already, if not, evaluates it, then moves to next prompt after a delay
+Scenario Page:
+
+Page where the scenarios are simulated for a patient interaction
+
+
+Functions:
+
+submitResponse:
+- called when the check button is clicked or the next prompt button if no check has been done
+
+moveToNextPrompt:
+- checks to see if answer has been checked already, if not, evaluates it, then moves to next prompt after a delay
+
+handleTranscriptionReady:
+- When a transcript is ready, callback function to get this data from Child (AudiRecorder component)
+- this updates the userInput variable using setUserInput
+
+
+Returns:
+
+Simulated scenario, options to evaluate response, move to next prompt, etc
+
 */
 
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router'; // Import Next.js useRouter hook
+import AudioRecorder from '../components/AudioRecorder';
 
 export default function ScenarioPage() {
   const router = useRouter();
@@ -21,6 +41,8 @@ export default function ScenarioPage() {
   const [result, setResult] = useState('');
   const [showResultsButton, setShowResultsButton] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
+  
+  // audio recorder vars, not currently used: const [isRecording, setIsRecording] = useState(false);
 
   // added for increased understanding of model behaviour, can remove later
   const [score, setScore] = useState('');
@@ -140,18 +162,34 @@ export default function ScenarioPage() {
     );
   }
 
+  // When a transcript is ready, callback function to get this data from Child (AudiRecorder component)
+  function handleTranscriptReady(transcript) {
+    // Put the transcript into userInput
+    setUserInput(transcript);
+  }
+
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <div style={{ marginBottom: '20px' }}>
+    <div 
+      style={{
+        fontFamily: 'Arial, sans-serif', 
+        maxWidth: '800px', 
+        margin: '0 auto', 
+        padding: '20px' }}
+    >
+      <div 
+        style= {{ marginBottom: '20px' }}
+      >
         <h3>Prompt:</h3>
         <p>{prompts[currentPromptIndex]?.patient_prompt}</p>
       </div>
-      <div style={{ marginBottom: '20px' }}>
+      <div 
+        style={{ marginBottom: '20px' }}
+      >
         <input
           type="text"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
-          placeholder="Type your answer here"
+          placeholder="Type your answer OR use audio"
           style={{
             border: '2px solid black',
             padding: '10px',
@@ -162,6 +200,7 @@ export default function ScenarioPage() {
         />
       </div>
       <div style={{ display: 'flex', gap: '10px' }}>
+      <AudioRecorder onTranscriptReady={handleTranscriptReady} />
   {/* Show "Check" and "Next Prompt" buttons only if not at the last prompt */}
   {!showResultsButton && (
     <>
