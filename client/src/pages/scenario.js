@@ -46,6 +46,8 @@ export default function ScenarioPage() {
 
   // added for increased understanding of model behaviour, can remove later
   const [score, setScore] = useState('');
+  const [audioRecorderKey, setAudioRecorderKey] = useState(0); // Key to force AudioRecorder re-render
+
 
   useEffect(() => {
     const fetchPrompts = async () => {
@@ -116,6 +118,8 @@ export default function ScenarioPage() {
       setUserInput(''); // Clear the input for the next prompt
       setScore('');
       setResponseSubmitted(false)
+
+      setAudioRecorderKey(prevKey => prevKey + 1);
     } else {
       alert('You have completed all prompts!');
       //Need to route to the results page
@@ -200,7 +204,7 @@ export default function ScenarioPage() {
         />
       </div>
       <div style={{ display: 'flex', gap: '10px' }}>
-      <AudioRecorder onTranscriptReady={handleTranscriptReady} />
+      <AudioRecorder key={audioRecorderKey} onTranscriptReady={handleTranscriptReady} />
   {/* Show "Check" and "Next Prompt" buttons only if not at the last prompt */}
   {!showResultsButton && (
     <>
