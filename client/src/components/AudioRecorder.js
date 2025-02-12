@@ -38,6 +38,9 @@ function AudioRecorder({ onTranscriptReady }) {
     const [isRecording, setIsRecording] = useState(false); // if the microphone is recording or not: true/false
     const [audioURL, setAudioURL] = useState(null); // URL to the recorded audio. dynamically generated after the recording stops
     const [audioBlob, setAudioBlob] = useState(null); // stores raw audio data in a Blob. used to upload to backend flask
+
+    const [showUploadRedo, setShowUploadRedo] = useState(false); //Controls Upload/Redo buttons updated (John Feb 12 )
+
     
     // useRef variables
     const mediaRecorderRef = useRef(null); // Media recorder instance, useRef to not re initialize it everytime
@@ -63,6 +66,8 @@ function AudioRecorder({ onTranscriptReady }) {
                 chunksRef.current = []; // reset chunks to prepare for next recording
                 setAudioBlob(blob); // save audio blob to new blob. Updates the audioBlob state. 
                 setAudioURL(URL.createObjectURL(blob)); // URL for blob, saves it there for playback
+
+                setShowUploadRedo(true); //Show Upload & Redo buttons after stopping
             };
 
             // starts recording audio
@@ -126,45 +131,38 @@ function AudioRecorder({ onTranscriptReady }) {
         }
     };
 
+    //Resets everything and switches back to "Start Recording"
+    const handleRedo = () => {
+        setIsRecording(false);
+        setShowUploadRedo(false);
+        setAudioBlob(null);
+        setAudioURL(null);
+    };
+
     return (
         <div>
-            <button 
-                onClick={startRecording}
-                disabled={isRecording}                 
-                style={{
-                    border: '2px solid black',
-                    padding: '12px',
-                    borderRadius: '15px',
-                    fontSize: '18px',
-                    width: '180px',
-                    height: '80px',
-                    cursor: 'pointer',
-                    backgroundColor: '#0070f3',
-                    color: 'white',
-                }}
-            >
-                Start Recording
-            </button>
-            <button 
-                onClick={stopRecording} 
-                disabled={!isRecording}                 
-                style={{
-                    border: '2px solid black',
-                    padding: '12px',
-                    borderRadius: '15px',
-                    fontSize: '18px',
-                    width: '180px',
-                    height: '80px',
-                    cursor: 'pointer',
-                    backgroundColor: '#0070f3',
-                    color: 'white',
-                }}
-            >
-                Stop Recording
-            </button>
-            {audioURL && (
-                <div>
-                    <button 
+            {/* Toggle Start/Stop Button */}
+            {!showUploadRedo ? (
+                <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    style={{
+                        border: '2px solid black',
+                        padding: '12px',
+                        borderRadius: '15px',
+                        fontSize: '18px',
+                        width: '200px',
+                        height: '80px',
+                        cursor: 'pointer',
+                        backgroundColor: isRecording ? 'red' : '#0070f3',
+                        color: 'white',
+                    }}
+                >
+                    {isRecording ? 'Stop Recording' : 'Start Recording'}
+                </button>
+            ) : (
+                // Show Upload & Redo Buttons after stopping
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                    <button
                         onClick={uploadAudio}
                         style={{
                             border: '2px solid black',
@@ -174,15 +172,30 @@ function AudioRecorder({ onTranscriptReady }) {
                             width: '180px',
                             height: '80px',
                             cursor: 'pointer',
-                            backgroundColor: '#0070f3',
+                            backgroundColor: '#28a745',
                             color: 'white',
                         }}
                     >
                         Upload Audio
                     </button>
+                    <button
+                        onClick={handleRedo}
+                        style={{
+                            border: '2px solid black',
+                            padding: '12px',
+                            borderRadius: '15px',
+                            fontSize: '18px',
+                            width: '180px',
+                            height: '80px',
+                            cursor: 'pointer',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                        }}
+                    >
+                        Redo
+                    </button>
                 </div>
-            )
-            }
+            )}
         </div>
     );
 }
