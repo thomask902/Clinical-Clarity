@@ -31,6 +31,7 @@ import AudioRecorder from '../components/AudioRecorder';
 export default function ScenarioPage() {
   const router = useRouter();
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const { scenarioId } = router.query; // ✅ Get scenarioId dynamically
 
   const [prompts, setPrompts] = useState([]);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
@@ -42,9 +43,11 @@ export default function ScenarioPage() {
   const [audioRecorderKey, setAudioRecorderKey] = useState(0);
 
   useEffect(() => {
+    if (!scenarioId) return; // ✅ Prevent fetching if scenarioId is missing
+
     const fetchPrompts = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/get_prompt/1`);
+        const response = await fetch(`${API_BASE_URL}/get_prompt/${scenarioId}`);
         const data = await response.json();
 
         if (data.error) {
@@ -59,7 +62,7 @@ export default function ScenarioPage() {
     };
 
     fetchPrompts();
-  }, []);
+  }, [scenarioId]);
 
   const submitResponse = async () => {
     if (!prompts.length || currentPromptIndex >= prompts.length) {
