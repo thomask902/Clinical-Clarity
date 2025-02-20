@@ -85,9 +85,10 @@ export default function ScenarioStartPage() {
           </button>
 
           {/* Start Button */}
-          <button onClick={() => router.push('/scenario')} className="button">
-            Start Scenario
-          </button>
+          <button onClick={() => router.push(`/scenario?scenarioId=${scenario.id}`)} className='button'>
+  Start Scenario
+</button>
+
         </div>
       </div>
     </div>
