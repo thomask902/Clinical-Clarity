@@ -1,3 +1,87 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* === Global Styles === */
+body {
+  @apply bg-[#FFFFFF] text-gray-900 font-sans;
+  overflow: hidden; /* Prevents scrolling */
+}
+
+/* === Header === */
+.header {
+  @apply flex items-center p-5 bg-[#E8F8FF] shadow-md;
+}
+
+.header img {
+  @apply h-12 mr-2;
+}
+
+.header h1 {
+  @apply text-2xl font-bold m-0;
+}
+
+/* === Centered Main Content === */
+.main-container {
+  @apply flex flex-col justify-center items-center min-h-[87vh] text-center;
+}
+
+/* === Hero Section Text === */
+.welcome-text {
+  font-size: 2.5rem; /* 4xl */
+  font-weight: 400; /* Normal weight */
+  color: #1f2937; /* Gray-900 */
+}
+
+.brand-text {
+  font-weight: 700; /* Bold */
+  color: #1f2937; /* Matches welcome-text (gray-900) */
+}
+
+.subtext {
+  font-size: 1.125rem; /* lg */
+  color: #4a5568; /* Gray-700 */
+  white-space: nowrap; /* Prevents text wrapping */
+}
+
+
+/* === Improved Buttons === */
+.button {
+  @apply w-56 px-6 py-3 text-lg rounded-xl text-white bg-gray-900 shadow-lg 
+    transition-all duration-300 transform hover:scale-105 hover:bg-gray-700;
+}
+
+/* === Navigation Bar (Centered in Header) === */
+.navbar {
+  @apply flex gap-8;
+}
+
+.nav-button {
+  @apply flex flex-col items-center justify-center text-center cursor-pointer transition-transform duration-300;
+}
+
+.nav-button img {
+  @apply h-8 w-8;
+}
+
+.nav-text {
+  @apply text-xs mt-1;
+}
+
+/* === Scenario Cards === */
+.scenario-card {
+  @apply relative bg-white border border-gray-300 p-4 rounded-xl shadow-md cursor-pointer transition-transform duration-300;
+}
+
+.scenario-card:hover {
+  @apply scale-105;
+}
+
+/* Hover Overlay */
+.scenario-hover {
+  @apply absolute inset-0 bg-gray-900 text-white opacity-0 flex justify-center items-center p-4 rounded-xl transition-opacity duration-300;
+}
+
+.scenario-card:hover .scenario-hover {
+  @apply opacity-90;
+}

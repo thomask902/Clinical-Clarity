@@ -16,7 +16,15 @@ Scenario Workflow STT:
 1. The user clicks the button "upload audio", which triggers the upload_audio API post request to send user response audio data to the backend
 2. breaksdown the user response using Open AI Whisper, transcirbes into text
 3. sends text transcription back to front end
+
+/get_scenarios
+Used to fetch all scenarios dynamically from the database in order to display on scenario selection page
+
+/get_prompt
+Used to fetch prompts based on unique scenario_id to display to user and facilitate the simulation
 """
+
+
 
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
@@ -97,6 +105,18 @@ def home():
         'message': "Welcome to the Flask API!",
         'endpoints': ['/get_prompt', '/evaluate', '/api/home']
     })
+
+@app.route('/get_scenarios', methods=['GET'])
+def get_scenarios():
+    scenarios = Scenario.query.all()
+    return jsonify([
+        {
+            'id': scenario.id,
+            'title': scenario.title,
+            'description': scenario.description
+        }
+        for scenario in scenarios
+    ])
 
 # Querying the database for prompts in order of sequence
 @app.route('/get_prompt/<int:scenario_id>', methods=['GET'])
