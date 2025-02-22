@@ -108,6 +108,11 @@ def home():
 
 @app.route('/get_scenarios', methods=['GET'])
 def get_scenarios():
+
+    # TO REMOVE LATER, A WAY TO RESET RESULTS VECTOR
+    # STILL WILL BREAK UNDER CONCURRENT USERS
+    result_vec.clear()
+
     scenarios = Scenario.query.all()
     return jsonify([
         {
