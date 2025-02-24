@@ -60,7 +60,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-whisper_model = whisper.load_model("tiny")
+# REMOVE COMMENT TO RE_ENABLE AUDIO
+# whisper_model = whisper.load_model("tiny")
+
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -228,8 +230,10 @@ def upload_audio():
         audio_file.save(temp_path)
 
     try:
+        # COMMENTED OUT TO REMOVE AUDIO CAPBILITY IN PROD
         # Now pass the file stored to Whisper
-        result = whisper_model.transcribe(temp_path)
+        #result = whisper_model.transcribe(temp_path)
+        result = {"test": "not working!"}
         print(result["text"])
     except Exception as e:
         return jsonify({'error': str(e)}), 500

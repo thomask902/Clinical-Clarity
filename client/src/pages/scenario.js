@@ -26,7 +26,9 @@ Simulated scenario, options to evaluate response, move to next prompt, etc
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import AudioRecorder from '../components/AudioRecorder';
+
+// REMOVE COMMENT TO RE-ENABLE AUDIO
+// import AudioRecorder from '../components/AudioRecorder';
 
 export default function ScenarioPage() {
   const router = useRouter();
