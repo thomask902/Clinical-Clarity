@@ -26,7 +26,9 @@ Simulated scenario, options to evaluate response, move to next prompt, etc
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import AudioRecorder from '../components/AudioRecorder';
+
+// REMOVE COMMENT TO RE-ENABLE AUDIO
+// import AudioRecorder from '../components/AudioRecorder';
 
 export default function ScenarioPage() {
   const router = useRouter();
@@ -153,7 +155,10 @@ export default function ScenarioPage() {
         className="border-2 border-black p-3 rounded-lg w-full max-w-lg"
       />
       <div className="flex flex-wrap gap-4 justify-center">
-        <AudioRecorder key={audioRecorderKey} onTranscriptReady={setUserInput} />
+
+      {/* UNCOMMENT BELOW TO RETURN AUDIO RECORDING CAPABILITY */}
+      {/*<AudioRecorder key={audioRecorderKey} onTranscriptReady={setUserInput} />*/}
+
         {!showResultsButton && (
           <>
             <button onClick={submitResponse} className="button">Check</button>

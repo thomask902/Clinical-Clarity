@@ -60,14 +60,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-print("before whisper installed")
-whisper_model = whisper.load_model("tiny")
-print("after whisper installed")
+# REMOVE COMMENT TO RE_ENABLE AUDIO
+# whisper_model = whisper.load_model("tiny")
 
-print("before similarity model installed")
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
-print("before similarity model installed")
 
 # naive global score storage
 result_vec = []
@@ -233,8 +230,10 @@ def upload_audio():
         audio_file.save(temp_path)
 
     try:
+        # COMMENTED OUT TO REMOVE AUDIO CAPBILITY IN PROD
         # Now pass the file stored to Whisper
-        result = whisper_model.transcribe(temp_path)
+        #result = whisper_model.transcribe(temp_path)
+        result = {"test": "not working!"}
         print(result["text"])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
