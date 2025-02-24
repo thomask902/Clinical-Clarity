@@ -9,15 +9,17 @@ export default function ScenarioStartPage() {
   //const API_BASE_URL = 'http://localhost:8080';
   
   const router = useRouter();
+  const { scenarioId } = router.query;  // Get scenarioId from URL
   const [scenario, setScenario] = useState(null);
-  const [isPopupVisible, setIsPopupVisible] = useState(false); // State for popup visibility
-  const popupRef = useRef(null); // Reference for popup clicks
+  const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const popupRef = useRef(null);
 
-  // Fetch scenario details
   useEffect(() => {
+    if (!scenarioId) return; // Prevent fetching before ID is available
+
     const fetchScenario = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/get_prompt/1`); // Replace 1 with dynamic ID
+        const response = await fetch(`${API_BASE_URL}/get_prompt/${scenarioId}`);
         const data = await response.json();
 
         if (data.error) {
@@ -32,7 +34,7 @@ export default function ScenarioStartPage() {
     };
 
     fetchScenario();
-  }, []);
+  }, [scenarioId]); // Runs when scenarioId changes
 
   // Handle clicking outside of popup
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function ScenarioStartPage() {
 
   if (!scenario) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px' }}>
+      <div className="main-container">
         <h1>Loading Scenario...</h1>
       </div>
     );
@@ -58,147 +60,40 @@ export default function ScenarioStartPage() {
 
   return (
     <div>
-      {/* Header Section */}
-      <div
-        style={{
-          backgroundColor: '#E8F8FF',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '20px',
-        }}
-      >
-        {/* Title */}
-        <h1
-          style={{
-            fontSize: '32px',
-            fontWeight: 'bold',
-            margin: 0,
-          }}
-        >
-          Clinical Clarity
-        </h1>
-        {/* Logo */}
-        <img
-          src="/ClinicalClarityLogo.png"
-          alt="Clinical Clarity Logo"
-          style={{ height: '70px', marginLeft: '10px' }}
-        />
-      </div>
-
       {/* Main Content Section */}
-      <div
-        style={{
-          backgroundColor: '#E8F8FF',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '87vh',
-          textAlign: 'center',
-          flexDirection: 'column',
-          position: 'relative',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-          }}
-        >
+      <div className="main-container">
+        <div className="flex items-center gap-5"> 
           <h1>Welcome to the start of the scenario!</h1>
           {/* Settings Button */}
-          <button
-            onClick={() => setIsPopupVisible(!isPopupVisible)}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <img
-              src="/SettingsWheel.png"
-              alt="Settings"
-              style={{ height: '60px' }}
-            />
+          <button onClick={() => setIsPopupVisible(!isPopupVisible)}>
+            <img src="/SettingsWheel.png" alt="Settings" className="h-16" />
           </button>
         </div>
 
         {/* Scenario Details */}
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          <h2>{scenario.title}</h2>
-          <p><strong>Description:</strong> {scenario.description}</p>
-          <p><strong>Door Sign:</strong> {scenario.door_sign}</p>
+        <div className="text-center mt-5">
+          <p>{scenario.door_sign}</p>
         </div>
 
         {/* Popup */}
         {isPopupVisible && (
-          <div
-            ref={popupRef}
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'white',
-              border: '2px solid black',
-              borderRadius: '10px',
-              width: '400px',
-              height: '300px',
-              padding: '20px',
-              boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-              zIndex: 1000,
-            }}
-          >
-            <p style={{ margin: 0, textAlign: 'center', fontSize: '18px' }}>Settings Menu</p>
+          <div ref={popupRef} className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-black rounded-lg w-96 h-72 p-5 shadow-lg z-50">
+            <p className="text-center text-lg">Settings Menu</p>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '20px',
-            marginTop: '20px',
-          }}
-        >
+        <div className="flex justify-center gap-5 mt-5">
           {/* Back to Home Button */}
-          <button
-            onClick={() => router.push('/')}
-            style={{
-              border: '2px solid black',
-              padding: '10px',
-              borderRadius: '15px',
-              fontSize: '16px',
-              width: '180px',
-              height: '80px',
-              cursor: 'pointer',
-              backgroundColor: '#0070f3',
-              color: 'white',
-            }}
-          >
-            Back to Home
+          <button onClick={() => router.push('/')} className="button">
+            Select A Different Scenario
           </button>
 
           {/* Start Button */}
-          <button
-            onClick={() => router.push('/scenario')}
-            style={{
-              border: '2px solid black',
-              padding: '10px',
-              borderRadius: '15px',
-              fontSize: '16px',
-              width: '180px',
-              height: '80px',
-              cursor: 'pointer',
-              backgroundColor: '#0070f3',
-              color: 'white',
-            }}
-          >
-            Start Scenario
-          </button>
+          <button onClick={() => router.push(`/scenario?scenarioId=${scenario.id}`)} className='button'>
+  Start Scenario
+</button>
+
         </div>
       </div>
     </div>
