@@ -9,7 +9,7 @@ export default function ScenarioSelection() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
-    fetch(API_BASE_URL)
+    fetch(`${API_BASE_URL}/get_scenarios`)
       .then((response) => response.json())
       .then((data) => setScenarios(data))
       .catch((error) => console.error("Error fetching scenarios:", error));
