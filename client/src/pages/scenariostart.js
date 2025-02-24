@@ -2,11 +2,7 @@ import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
 
 export default function ScenarioStartPage() {
-  // PROD
-  const API_BASE_URL = 'https://clinical-clarity-backend.onrender.com';
-
-  // LOCAL
-  //const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   
   const router = useRouter();
   const { scenarioId } = router.query;  // Get scenarioId from URL
