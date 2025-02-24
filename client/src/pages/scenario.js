@@ -153,7 +153,10 @@ export default function ScenarioPage() {
         className="border-2 border-black p-3 rounded-lg w-full max-w-lg"
       />
       <div className="flex flex-wrap gap-4 justify-center">
-        <AudioRecorder key={audioRecorderKey} onTranscriptReady={setUserInput} />
+
+      {/* UNCOMMENT BELOW TO RETURN AUDIO RECORDING CAPABILITY */}
+      {/*<AudioRecorder key={audioRecorderKey} onTranscriptReady={setUserInput} />*/}
+
         {!showResultsButton && (
           <>
             <button onClick={submitResponse} className="button">Check</button>

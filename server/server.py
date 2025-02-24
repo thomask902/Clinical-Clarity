@@ -60,14 +60,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-print("before whisper installed")
 whisper_model = whisper.load_model("tiny")
-print("after whisper installed")
-
-print("before similarity model installed")
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
-print("before similarity model installed")
 
 # naive global score storage
 result_vec = []
