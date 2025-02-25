@@ -171,12 +171,15 @@ def evaluate():
     expected_vec = model.encode([prompt.expected_response])[0]
     user_vec = model.encode([user_input])[0]
 
-    # Compute cosine similarity (the closer to 1, the more similar)
-    similarity_score = 1 - distance.cosine(user_vec, expected_vec)
+    # distance is in [0,2] where 0 is identical, 1 is unrelated, and 0 is opposite
+    cos_distance = distance.cosine(user_vec, expected_vec)
+
+    # normalized score
+    similarity_score = 1 - (cos_distance / 2) 
     print(f"Similarity score: {similarity_score}")
 
     # Threshold to determine correct or not
-    threshold = 0.6
+    threshold = 0.75
     is_correct = similarity_score >= threshold
     result_vec.append(is_correct)
 
