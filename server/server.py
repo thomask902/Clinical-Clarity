@@ -26,7 +26,7 @@ Used to fetch prompts based on unique scenario_id to display to user and facilit
 
 
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc
 import os
@@ -37,6 +37,8 @@ import io
 import numpy as np
 import librosa
 import tempfile
+from supabase_client import supabase
+import jwt
 
 # for model
 from scipy.spatial import distance
@@ -45,6 +47,8 @@ from sentence_transformers import SentenceTransformer
 # App instance
 app = Flask(__name__)
 CORS(app)
+
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 
 
 # Load environment variables
@@ -241,6 +245,78 @@ def upload_audio():
     os.remove(temp_path)
 
     return jsonify({'transcript': result["text"]}), 200
+
+# TESTING SUPABASE CONNECTION
+@app.route("/test-supabase", methods=["GET"])
+def test_supabase():
+    try:
+        # Try fetching data from a Supabase table (e.g., "prompts")
+        response = supabase.table("prompts").select("*").limit(1).execute()
+
+        print("Raw Supabase Response:", response)  # Debugging: Print raw response
+
+        # Check if the response contains 'data'
+        if isinstance(response, dict):
+            return jsonify({"error": "Supabase returned a dictionary instead of an expected response object.", "response": response}), 500
+
+        if response.data:
+            return jsonify({"message": "Supabase connection successful!", "sample_data": response.data}), 200
+        else:
+            return jsonify({"message": "Connected to Supabase, but no data found."}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Supabase connection failed!", "details": str(e)}), 500
+
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    try:
+        res = supabase.auth.sign_up({"email": email, "password": password})
+        return jsonify({"message": "Sign-up successful! Please check your email to confirm your account.", "data": res})
+    except Exception as e:
+        return jsonify({"error": "Sign-up failed", "details": str(e)}), 500
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    try:
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        session_data = res.session  # This contains JWT and user session
+
+        if session_data is None:
+            return jsonify({"error": "Invalid credentials or email not confirmed."}), 401
+
+        user = session_data.user
+        serializable_session = {
+            "access_token": session_data.access_token,
+            "refresh_token": session_data.refresh_token,
+            "expires_in": session_data.expires_in,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "confirmed_at": user.confirmed_at,  # if available
+                # add any other user fields you need
+            }
+            }
+
+        return jsonify({"message": "Login successful!", "session": serializable_session})
+
+    except Exception as e:
+        print(str(e))
+        return jsonify({"error": "Login failed", "details": str(e)}), 401
 
     
 # this will run for local development
