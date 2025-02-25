@@ -103,13 +103,6 @@ class Prompt(db.Model):
     def __repr__(self):
         return f"<Prompt {self.id} - Scenario {self.scenario_id}>"
 
-@app.route("/", methods=['GET'])
-def home():
-    return jsonify({
-        'message': "Welcome to the Flask API!",
-        'endpoints': ['/get_prompt', '/evaluate', '/api/home']
-    })
-
 @app.route('/get_scenarios', methods=['GET'])
 def get_scenarios():
 
@@ -190,10 +183,10 @@ def evaluate():
                     'score': f"{int(similarity_score * 100)}%"})
 
 # /api/home endpoint
-@app.route("/api/home", methods=['GET'])
+@app.route("/", methods=['GET'])
 def return_home():
     return jsonify({
-        'message': "We are team 13 :)",
+        'message': "Management Engineering c/o 2025 Capstone",
         'team': ['Thomas', 'Saleh', 'Abhinav', 'Matt', 'John']
     })
 
