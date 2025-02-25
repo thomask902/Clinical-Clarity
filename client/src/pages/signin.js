@@ -25,7 +25,13 @@ export default function SignInPage() {
         localStorage.setItem("access_token", data.session.access_token);
         localStorage.setItem("user", JSON.stringify(data.session.user));
 
-        // redirect to home page
+        // ensure storage is updated before redirecting
+        await new Promise((resolve) => setTimeout(resolve, 100)); 
+        const storedToken = localStorage.getItem("access_token");
+        if (!storedToken) {
+          console.error("Token storage failed, retrying...");
+          return; // Prevent redirect if storage fails
+        }
         router.push("/");
       } else {
         setErrorMsg(data.error || "Sign in failed.");

@@ -22,7 +22,7 @@ export default function SignupPage() {
       const data = await response.json();
       if (response.ok) {
         // Example: if successful, redirect to login or scenario page
-        router.push("/login");
+        router.push("/signin");
       } else {
         setErrorMsg(data.error || "Sign-up failed.");
       }
@@ -109,7 +109,7 @@ export default function SignupPage() {
 
           <p className="mt-4">
             Already have an account?{" "}
-            <Link href="/login">
+            <Link href="/signin">
               <span className="text-blue-500 cursor-pointer underline">
                 Sign In
               </span>
