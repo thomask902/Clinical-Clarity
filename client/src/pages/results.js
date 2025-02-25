@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-export default function NewPage() {
+export default function ResultsPage() {
   const router = useRouter();
   const [results, setResults] = useState(null);
 
   useEffect(() => {
     // Retrieve stored results from localStorage
-    const storedResults = localStorage.getItem('resultsData');
+    const storedResults = localStorage.getItem('scenario_results');
 
     if (storedResults) {
       setResults(JSON.parse(storedResults));
@@ -51,13 +51,13 @@ export default function NewPage() {
         }}
       >
         <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          <strong>Score:</strong> {results.score}%
+          <strong>Score:</strong> {(results.num_correct / results.num_prompts * 100).toFixed(1)}%
         </p>
         <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          <strong>Correct Answers:</strong> {results.correct_answers} / {results.total_questions}
+          <strong>Correct Answers:</strong> {results.num_correct} / {results.num_prompts}
         </p>
         <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          <strong>Feedback:</strong> {results.feedback}
+          <strong>Feedback:</strong> Great work!
         </p>
       </div>
 

@@ -109,29 +109,60 @@ export default function ScenarioPage() {
       setResponseSubmitted(false);
       setAudioRecorderKey((prevKey) => prevKey + 1);
     } else {
-      alert('You have completed all prompts!');
       setShowResultsButton(true);
     }
   };
 
   const handleResultsClick = async () => {
+    // get user id
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user?.id;
+
+    // get results
+    const trueCount = resultList.filter(Boolean).length;
+    const totalCount = resultList.length;
+
+    const result_dict = {
+      "user_id": userId,
+      "scenario_id": scenarioId,
+      "category": "N/A",
+      "num_correct": trueCount,
+      "num_prompts": totalCount
+    }
+
+    // testing
+    console.log(result_dict)
+
+    // send results to backend to add to db
     try {
-      const response = await fetch(`${API_BASE_URL}/api/results`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`${API_BASE_URL}/store_results`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result_dict),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      if (response.ok) {
+        console.log("Added result to db!")
+      } else {
+        const errorData = await response.json();  // Get error message from backend
+        console.error("Failed to add result to DB:", errorData);
+        setErrorMsg(errorData.error || "Failed to add result to DB.");
       }
-
-      const data = await response.json();
-      localStorage.setItem('resultsData', JSON.stringify(data));
-      router.push('/results');
     } catch (error) {
-      console.error('Error fetching results:', error);
-      alert('Failed to fetch results. Please try again.');
+      console.error("Error in API call:", error);
     }
+
+    // store user results locally
+    localStorage.setItem("scenario_results", JSON.stringify(result_dict));
+
+    // ensure storage is updated before redirecting
+    await new Promise((resolve) => setTimeout(resolve, 100)); 
+    const storedToken = localStorage.getItem("scenario_results");
+    if (!storedToken) {
+      console.error("Results storage failed, retrying...");
+      return; // Prevent redirect if storage fails
+    }
+    router.push("/results");
   };
 
   if (!prompts.length) {

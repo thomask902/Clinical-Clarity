@@ -70,9 +70,6 @@ db = SQLAlchemy(app)
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# naive global score storage
-result_vec = []
-
 # Define the Scenario table
 class Scenario(db.Model):
     __tablename__ = 'scenarios'
@@ -105,10 +102,6 @@ class Prompt(db.Model):
 
 @app.route('/get_scenarios', methods=['GET'])
 def get_scenarios():
-
-    # TO REMOVE LATER, A WAY TO RESET RESULTS VECTOR
-    # STILL WILL BREAK UNDER CONCURRENT USERS
-    result_vec.clear()
 
     scenarios = Scenario.query.all()
     return jsonify([
@@ -174,10 +167,8 @@ def evaluate():
     # Threshold to determine correct or not
     threshold = 0.75
     is_correct = similarity_score >= threshold
-    result_vec.append(is_correct)
 
     print(f"Correct? {is_correct}")
-    print(f"Results Vector: {result_vec}")
 
     return jsonify({'is_correct': bool(is_correct),
                     'score': f"{int(similarity_score * 100)}%"})
@@ -190,20 +181,41 @@ def return_home():
         'team': ['Thomas', 'Saleh', 'Abhinav', 'Matt', 'John']
     })
 
-@app.route("/api/results", methods=['GET'])
-def get_results():
-    # Score/Result of the User
-    correct_answers = sum(result_vec)
-    total_questions = len(result_vec)
-    score = correct_answers / total_questions
+@app.route("/store_results", methods=['POST'])
+def store_results():
+    data = request.get_json()
 
-    results = {
-        "score": score,
-        "correct_answers": int(correct_answers),
-        "total_questions": total_questions,
-        "feedback": "Great job!"
-    }
-    return jsonify(results)
+    print("results data:", data)
+
+    # Extracting required fields from request
+    user_id = data.get("user_id")
+    scenario_id = data.get("scenario_id")
+    category = data.get("category")
+    num_correct = data.get("num_correct")
+    num_prompts = data.get("num_prompts")
+
+    # Validation: Ensure all required fields are present (allow 0 values)
+    if any(value is None for value in [user_id, scenario_id, category, num_correct, num_prompts]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    try:
+        # Insert data into Supabase "results" table
+        response = supabase.table("results").insert([{
+            "user_id": user_id,
+            "scenario_id": scenario_id,
+            "category": category,
+            "num_correct": num_correct,
+            "num_prompts": num_prompts
+        }]).execute()
+
+        # Debugging: Print Supabase response
+        print("Supabase response:", response)
+
+        return jsonify({"message": "Added result to DB"}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Failed to add result to DB", "details": str(e)}), 500
+
 
 # API to get audio file from user input, transcribe it, return to front end
 @app.route('/upload_audio', methods=['POST'])
@@ -241,27 +253,6 @@ def upload_audio():
     os.remove(temp_path)
 
     return jsonify({'transcript': result["text"]}), 200
-
-# TESTING SUPABASE CONNECTION
-@app.route("/test-supabase", methods=["GET"])
-def test_supabase():
-    try:
-        # Try fetching data from a Supabase table (e.g., "prompts")
-        response = supabase.table("prompts").select("*").limit(1).execute()
-
-        print("Raw Supabase Response:", response)  # Debugging: Print raw response
-
-        # Check if the response contains 'data'
-        if isinstance(response, dict):
-            return jsonify({"error": "Supabase returned a dictionary instead of an expected response object.", "response": response}), 500
-
-        if response.data:
-            return jsonify({"message": "Supabase connection successful!", "sample_data": response.data}), 200
-        else:
-            return jsonify({"message": "Connected to Supabase, but no data found."}), 200
-
-    except Exception as e:
-        return jsonify({"error": "Supabase connection failed!", "details": str(e)}), 500
 
 
 @app.route("/signup", methods=["POST"])
