@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function SignInPage() {
   const router = useRouter();
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -11,9 +11,9 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   // Handle Sign In
-  const handleLogIn = async () => {
+  const handleSignIn = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      const response = await fetch(`${API_BASE_URL}/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -24,7 +24,7 @@ export default function LoginPage() {
         // Example: if successful, go to scenario selection
         router.push("/");
       } else {
-        setErrorMsg(data.error || "Login failed.");
+        setErrorMsg(data.error || "Sign in failed.");
       }
     } catch (error) {
       setErrorMsg("An unexpected error occurred.");
@@ -102,7 +102,7 @@ export default function LoginPage() {
           {/* Sign In Button */}
           <button
             className="button w-full py-2 mt-2"
-            onClick={handleLogIn}
+            onClick={handleSignIn}
           >
             Sign In
           </button>
@@ -122,4 +122,4 @@ export default function LoginPage() {
 }
 
 // Optional: This tells _app.js to render this page without a Layout
-LoginPage.getLayout = (page) => page;
+SignInPage.getLayout = (page) => page;

@@ -283,8 +283,8 @@ def signup():
     except Exception as e:
         return jsonify({"error": "Sign-up failed", "details": str(e)}), 500
 
-@app.route("/login", methods=["POST"])
-def login():
+@app.route("/signin", methods=["POST"])
+def signin():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
@@ -316,7 +316,15 @@ def login():
 
     except Exception as e:
         print(str(e))
-        return jsonify({"error": "Login failed", "details": str(e)}), 401
+        return jsonify({"error": "Sign in failed", "details": str(e)}), 401
+
+@app.route("/signout", methods=["POST"])
+def signout():
+    try:
+        supabase.auth.sign_out()  # Sign out the user
+        return jsonify({"message": "Logout successful"}), 200
+    except Exception as e:
+        return jsonify({"error": "Logout failed", "details": str(e)}), 500
 
     
 # this will run for local development
