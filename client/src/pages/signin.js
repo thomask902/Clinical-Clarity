@@ -21,7 +21,11 @@ export default function SignInPage() {
 
       const data = await response.json();
       if (response.ok) {
-        // Example: if successful, go to scenario selection
+        // store JWT and user data locally
+        localStorage.setItem("access_token", data.session.access_token);
+        localStorage.setItem("user", JSON.stringify(data.session.user));
+
+        // redirect to home page
         router.push("/");
       } else {
         setErrorMsg(data.error || "Sign in failed.");

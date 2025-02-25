@@ -13,6 +13,9 @@ export default function Layout({ children }) {
       });
   
       if (response.ok) {
+        // remove JWT and user from local storage
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user");
         router.push("/signin"); // Redirect to login page after sign-out
       } else {
         console.error("Sign out failed:", await response.json());
