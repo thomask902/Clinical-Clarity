@@ -30,7 +30,7 @@ export default function ScenarioStartPage() {
     };
 
     fetchScenario();
-  }, [scenarioId]); // Runs when scenarioId changes
+  }, [scenarioId, API_BASE_URL]); // Runs when scenarioId changes
 
   // Handle clicking outside of popup
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function ScenarioStartPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [API_BASE_URL]);
+  }, []);
 
   if (!scenario) {
     return (
