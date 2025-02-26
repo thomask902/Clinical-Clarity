@@ -14,7 +14,7 @@ export function useAuth() {
     } else {
       setIsAuthenticated(true);
     }
-  }, []);
+  }, [router]);
 
   return isAuthenticated;
 }

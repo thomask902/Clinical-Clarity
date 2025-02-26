@@ -44,7 +44,7 @@ export default function ScenarioStartPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [API_BASE_URL]);
 
   if (!scenario) {
     return (

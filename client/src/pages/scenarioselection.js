@@ -13,7 +13,7 @@ export default function ScenarioSelection() {
       .then((response) => response.json())
       .then((data) => setScenarios(data))
       .catch((error) => console.error("Error fetching scenarios:", error));
-  }, []);
+  }, [API_BASE_URL]);
 
   const filteredScenarios = scenarios.filter((scenario) =>
     scenario.title.toLowerCase().includes(search.toLowerCase())
