@@ -25,20 +25,20 @@ Used to fetch prompts based on unique scenario_id to display to user and facilit
 """
 
 
-
 from flask import Flask, jsonify, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
-import whisper
 import io
 import numpy as np
-import librosa
 import tempfile
 from supabase_client import supabase
 import jwt
+
+# Azure AI OpenAI models:
+from openai import AzureOpenAI
 
 # for model
 from scipy.spatial import distance
@@ -62,11 +62,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# REMOVE COMMENT TO RE_ENABLE AUDIO
-# whisper_model = whisper.load_model("tiny")
-
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# naive global score storage
+result_vec = []
+
+# Speech to Text Client load
+stt_client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_WHISPER_API_KEY"),  
+    api_version="2024-02-01",
+    azure_endpoint = os.getenv("AZURE_OPENAI_WHISPER_ENDPOINT")
+)
+
+# Corresponds to the custom name we chose for that deployment (on deployment Azure site)
+stt_deployment_id = "whisper" 
 
 # Define the Scenario table
 class Scenario(db.Model):
@@ -225,32 +235,27 @@ def upload_audio():
     # return 400 Bad Request error
     if not audio_file:
         return jsonify({'error': 'No audio file uploaded'}), 400
-    
-    # save file under recordings/ folder
-    #save_path = os.path.join("recordings", "recording.wav")
-    #audio_file.save(save_path)
-
-    # Read all bytes from the uploaded file
-    #audio_bytes = audio_file.read()
-    #audio_buffer = io.BytesIO(audio_bytes)
-    #audio_buffer.seek(0)  # Ensure pointer is at the start
 
     with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
         temp_path = tmp.name
         audio_file.save(temp_path)
 
+    # Now pass the file stored to STT API
     try:
-        # COMMENTED OUT TO REMOVE AUDIO CAPBILITY IN PROD
-        # Now pass the file stored to Whisper
-        #result = whisper_model.transcribe(temp_path)
-        result = {"test": "not working!"}
-        print(result["text"])
+        with open(temp_path, "rb") as audio_file_path:
+            result = stt_client.audio.transcriptions.create(
+                file=audio_file_path,            
+                model=stt_deployment_id
+            )
+
+        print(result.text)
+      
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
     os.remove(temp_path)
 
-    return jsonify({'transcript': result["text"]}), 200
+    return jsonify({'transcript': result.text}), 200
 
 
 @app.route("/signup", methods=["POST"])
