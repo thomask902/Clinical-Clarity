@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import Image from "next/image";
 
 export default function Layout({ children }) {
   const router = useRouter();
@@ -11,13 +12,12 @@ export default function Layout({ children }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-  
+
       if (response.ok) {
-        console.log("Logout Successful")
-        // remove JWT and user from local storage
+        console.log("Logout Successful");
         localStorage.removeItem("access_token");
         localStorage.removeItem("user");
-        router.push("/signin"); // Redirect to login page after sign-out
+        router.push("/signin");
       } else {
         console.error("Sign out failed:", await response.json());
         alert("Sign out failed. Please try again.");
@@ -37,10 +37,12 @@ export default function Layout({ children }) {
           <h1 className="text-xl font-bold">Clinical Clarity</h1>
           <Link href="/">
             <div className="flex items-center cursor-pointer">
-              <img
+              <Image
                 src="/ClinicalClarityLogo.png"
                 alt="Clinical Clarity Logo"
-                className="h-12"
+                width={48} // Set appropriate width
+                height={48} // Set appropriate height
+                priority // Ensures it loads quickly
               />
             </div>
           </Link>
@@ -50,25 +52,25 @@ export default function Layout({ children }) {
         <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-8">
           {/* Home */}
           <button className="nav-button" onClick={() => router.push("/")}>
-            <img src="/HomePage.png" alt="Home" className="h-8" />
+            <Image src="/HomePage.png" alt="Home" width={32} height={32} />
             <p className="nav-text">Home</p>
           </button>
 
           {/* Progress */}
           <button className="nav-button" onClick={() => alert("Progress Page Coming Soon!")}>
-            <img src="/Progress.png" alt="Progress" className="h-8" />
+            <Image src="/Progress.png" alt="Progress" width={32} height={32} />
             <p className="nav-text">Progress</p>
           </button>
 
           {/* Daily Challenge */}
           <button className="nav-button" onClick={() => alert("Daily Challenge Coming Soon!")}>
-            <img src="/DailyChallenge.png" alt="Daily Challenge" className="h-8" />
+            <Image src="/DailyChallenge.png" alt="Daily Challenge" width={32} height={32} />
             <p className="nav-text">Daily</p>
           </button>
 
           {/* Account */}
           <button className="nav-button" onClick={() => alert("Account Page Coming Soon!")}>
-            <img src="/Account.png" alt="Account" className="h-8" />
+            <Image src="/Account.png" alt="Account" width={32} height={32} />
             <p className="nav-text">Account</p>
           </button>
         </div>
@@ -76,7 +78,7 @@ export default function Layout({ children }) {
         {/* Right Section: Sign Out Button */}
         <div className="w-32 flex justify-end">
           <button className="nav-button" onClick={handleSignOut}>
-            <img src="/signout.ico" alt="Sign Out" className="h-8" />
+            <Image src="/signout.ico" alt="Sign Out" width={32} height={32} />
             <p className="nav-text">Sign Out</p>
           </button>
         </div>

@@ -213,7 +213,7 @@ export default function ScenarioPage() {
       {showResultsButton && (
         <>
           <div className="text-center">
-            <h3 className="text-xl">That's the end of the scenario! Great work!</h3>
+            <h3 className="text-xl">That&apos;s the end of the scenario! Great work!</h3>
           </div>
           <div className="mt-5">
             <button onClick={handleResultsClick} className="button">See Results</button>
