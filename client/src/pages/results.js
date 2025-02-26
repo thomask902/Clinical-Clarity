@@ -15,7 +15,7 @@ export default function ResultsPage() {
       alert("No results found. Redirecting to home...");
       router.push('/');
     }
-  }, []);
+  }, [router]);
 
   if (!results) {
     return (

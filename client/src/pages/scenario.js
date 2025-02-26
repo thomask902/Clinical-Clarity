@@ -63,7 +63,7 @@ export default function ScenarioPage() {
     };
 
     fetchPrompts();
-  }, [scenarioId]);
+  }, [scenarioId, API_BASE_URL]);
 
   const submitResponse = async () => {
     if (!prompts.length || currentPromptIndex >= prompts.length) {
