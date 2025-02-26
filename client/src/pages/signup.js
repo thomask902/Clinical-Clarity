@@ -8,7 +8,7 @@ export default function SignupPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [response, setResponse] = useState("");
 
   // Handle Sign Up
   const handleSignUp = async () => {
@@ -20,14 +20,16 @@ export default function SignupPage() {
       });
 
       const data = await response.json();
+      console.log(data)
       if (response.ok) {
-        // Example: if successful, redirect to login or scenario page
+        setResponse(data.message)
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         router.push("/signin");
       } else {
-        setErrorMsg(data.error || "Sign-up failed.");
+        setResponse(data.message || "Sign-up failed.");
       }
     } catch (error) {
-      setErrorMsg("An unexpected error occurred.");
+      setResponse(data.message || "An unexpected error occurred.");
     }
   };
 
@@ -38,7 +40,6 @@ export default function SignupPage() {
         {/* Left Section: Logo & Title */}
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">Clinical Clarity</h1>
-          <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
                 src="/ClinicalClarityLogo.png"
@@ -46,7 +47,6 @@ export default function SignupPage() {
                 className="h-12"
               />
             </div>
-          </Link>
         </div>
       </header>
 
@@ -95,8 +95,8 @@ export default function SignupPage() {
             />
           </div>
 
-          {errorMsg && (
-            <p className="text-red-600 mb-2">{errorMsg}</p>
+          {response && (
+            <p className="mb-2">{response}</p>
           )}
 
           {/* Sign Up Button */}

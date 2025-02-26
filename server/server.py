@@ -52,6 +52,9 @@ CORS(app)
 # Load environment variables
 load_dotenv()
 
+# secret key for JWT to work
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+
 # Determine if running in production
 FLASK_ENV = os.environ.get("FLASK_ENV", "production")
 
@@ -268,10 +271,34 @@ def signup():
         return jsonify({"error": "Email and password are required"}), 400
 
     try:
+        # Attempt to sign up the user
         res = supabase.auth.sign_up({"email": email, "password": password})
-        return jsonify({"message": "Sign-up successful! Please check your email to confirm your account.", "data": res})
+
+        # If Supabase returns a user, check if they are confirmed
+        user = res.user
+
+        if user and not user.confirmed_at:
+            return jsonify({
+                "message": "Sign-up successful! Please check your email to confirm your account before signing in.",
+                "requires_verification": True
+            }), 200
+
+        return jsonify({
+            "message": "Sign-up successful!",
+            "user_id": user.id if user else None
+        }), 200
+
     except Exception as e:
-        return jsonify({"error": "Sign-up failed", "details": str(e)}), 500
+        error_message = str(e)
+
+        # Check if the error is due to the user already being signed up but not confirmed
+        if "User already registered" in error_message:
+            return jsonify({
+                "message": "This email is already registered but not verified. Please check your email to confirm your account.",
+                "requires_verification": True
+            }), 200
+
+        return jsonify({"error": "Sign-up failed", "details": error_message}), 500
 
 @app.route("/signin", methods=["POST"])
 def signin():

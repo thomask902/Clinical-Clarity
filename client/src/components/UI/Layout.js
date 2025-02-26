@@ -13,6 +13,7 @@ export default function Layout({ children }) {
       });
   
       if (response.ok) {
+        console.log("Logout Successful")
         // remove JWT and user from local storage
         localStorage.removeItem("access_token");
         localStorage.removeItem("user");
