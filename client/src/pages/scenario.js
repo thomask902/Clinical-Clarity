@@ -37,6 +37,7 @@ export default function ScenarioPage() {
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [result, setResult] = useState('');
+  const [resultList, setResultList] = useState([]);
   const [showResultsButton, setShowResultsButton] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
   const [score, setScore] = useState('');
@@ -62,7 +63,7 @@ export default function ScenarioPage() {
     };
 
     fetchPrompts();
-  }, [scenarioId]);
+  }, [scenarioId, API_BASE_URL]);
 
   const submitResponse = async () => {
     if (!prompts.length || currentPromptIndex >= prompts.length) {
@@ -84,6 +85,7 @@ export default function ScenarioPage() {
         }),
       });
       const data = await response.json();
+      setResultList((prevList) => [...prevList, data.is_correct]);
       setResult(data.is_correct ? 'Correct!' : 'False!');
       setScore(data.score);
       setResponseSubmitted(true);
@@ -105,29 +107,60 @@ export default function ScenarioPage() {
       setResponseSubmitted(false);
       setAudioRecorderKey((prevKey) => prevKey + 1);
     } else {
-      alert('You have completed all prompts!');
       setShowResultsButton(true);
     }
   };
 
   const handleResultsClick = async () => {
+    // get user id
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user?.id;
+
+    // get results
+    const trueCount = resultList.filter(Boolean).length;
+    const totalCount = resultList.length;
+
+    const result_dict = {
+      "user_id": userId,
+      "scenario_id": scenarioId,
+      "category": "N/A",
+      "num_correct": trueCount,
+      "num_prompts": totalCount
+    }
+
+    // testing
+    console.log(result_dict)
+
+    // send results to backend to add to db
     try {
-      const response = await fetch(`${API_BASE_URL}/api/results`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`${API_BASE_URL}/store_results`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result_dict),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      if (response.ok) {
+        console.log("Added result to db!")
+      } else {
+        const errorData = await response.json();  // Get error message from backend
+        console.error("Failed to add result to DB:", errorData);
+        setErrorMsg(errorData.error || "Failed to add result to DB.");
       }
-
-      const data = await response.json();
-      localStorage.setItem('resultsData', JSON.stringify(data));
-      router.push('/results');
     } catch (error) {
-      console.error('Error fetching results:', error);
-      alert('Failed to fetch results. Please try again.');
+      console.error("Error in API call:", error);
     }
+
+    // store user results locally
+    localStorage.setItem("scenario_results", JSON.stringify(result_dict));
+
+    // ensure storage is updated before redirecting
+    await new Promise((resolve) => setTimeout(resolve, 100)); 
+    const storedToken = localStorage.getItem("scenario_results");
+    if (!storedToken) {
+      console.error("Results storage failed, retrying...");
+      return; // Prevent redirect if storage fails
+    }
+    router.push("/results");
   };
 
   if (!prompts.length) {
@@ -136,39 +169,59 @@ export default function ScenarioPage() {
 
   return (
     <div className="main-container flex flex-col items-center justify-center min-h-screen gap-6 p-6 relative">
+      {/* Return to Scenario Selection Button */}
       <div className="absolute bottom-6 left-6">
         <button onClick={() => router.push('/scenarioselection')} className="button">
           Return to Scenario Selection
         </button>
       </div>
-      <div className="text-center">
-        <h3 className="text-xl font-semibold">Prompt:</h3>
-        <p className="text-lg text-gray-700">{prompts[currentPromptIndex]?.patient_prompt}</p>
-      </div>
-      <input
-        type="text"
-        value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
-        placeholder="Type your response or start recording"
-        className="border-2 border-black p-3 rounded-lg w-full max-w-lg"
-      />
-      <div className="flex flex-wrap gap-4 justify-center">
-        <AudioRecorder key={audioRecorderKey} onTranscriptReady={setUserInput} />
-        {!showResultsButton && (
-          <>
+  
+      {/* Hide Prompt & Input When Show Results is Enabled */}
+      {!showResultsButton && (
+        <>
+          {/* Prompt Section */}
+          <div className="text-center">
+            <h3 className="text-xl font-semibold">Prompt:</h3>
+            <p className="text-lg text-gray-700">{prompts[currentPromptIndex]?.patient_prompt}</p>
+          </div>
+  
+          {/* Input Field */}
+          <input
+            type="text"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            placeholder="Type your response or start recording"
+            className="border-2 border-black p-3 rounded-lg w-full max-w-lg"
+          />
+  
+          {/* Audio Recorder (Commented) */}
+          <AudioRecorder key={audioRecorderKey} onTranscriptReady={setUserInput} />
+          
+          <div className="flex flex-wrap gap-4 justify-center">
             <button onClick={submitResponse} className="button">Check</button>
             <button onClick={moveToNextPrompt} className="button">Next Prompt</button>
-          </>
-        )}
-      </div>
-      {showResultsButton && (
-        <div className="mt-5">
-          <button onClick={handleResultsClick} className="button bg-green-500 hover:bg-green-700">See Results!</button>
-        </div>
+          </div>
+
+          {/* Result Display */}
+          <div className="mt-5 font-bold text-lg" style={{ color: result === 'Correct!' ? 'green' : 'red' }}>
+            {result}<br />{score}
+          </div>
+        </>
       )}
-      <div className="mt-5 font-bold text-lg" style={{ color: result === 'Correct!' ? 'green' : 'red' }}>
-        {result}<br />{score}
-      </div>
+  
+      {/* See Results Button*/}
+      {showResultsButton && (
+        <>
+          <div className="text-center">
+            <h3 className="text-xl">That&apos;s the end of the scenario! Great work!</h3>
+          </div>
+          <div className="mt-5">
+            <button onClick={handleResultsClick} className="button">See Results</button>
+          </div>
+        </>
+      )}
+  
+      
     </div>
-  );
+  );  
 }

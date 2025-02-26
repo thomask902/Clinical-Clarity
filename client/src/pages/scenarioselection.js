@@ -6,13 +6,14 @@ export default function ScenarioSelection() {
   const [scenarios, setScenarios] = useState([]);
   const [search, setSearch] = useState("");
   const router = useRouter();
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
-    fetch("http://localhost:8080/get_scenarios")
+    fetch(`${API_BASE_URL}/get_scenarios`)
       .then((response) => response.json())
       .then((data) => setScenarios(data))
       .catch((error) => console.error("Error fetching scenarios:", error));
-  }, []);
+  }, [API_BASE_URL]);
 
   const filteredScenarios = scenarios.filter((scenario) =>
     scenario.title.toLowerCase().includes(search.toLowerCase())

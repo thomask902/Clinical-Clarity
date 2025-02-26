@@ -1,8 +1,10 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
+import Image from "next/image";
 
 export default function ScenarioStartPage() {
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  
   const router = useRouter();
   const { scenarioId } = router.query;  // Get scenarioId from URL
   const [scenario, setScenario] = useState(null);
@@ -29,7 +31,7 @@ export default function ScenarioStartPage() {
     };
 
     fetchScenario();
-  }, [scenarioId]); // Runs when scenarioId changes
+  }, [scenarioId, API_BASE_URL]); // Runs when scenarioId changes
 
   // Handle clicking outside of popup
   useEffect(() => {
@@ -61,7 +63,13 @@ export default function ScenarioStartPage() {
           <h1>Welcome to the start of the scenario!</h1>
           {/* Settings Button */}
           <button onClick={() => setIsPopupVisible(!isPopupVisible)}>
-            <img src="/SettingsWheel.png" alt="Settings" className="h-16" />
+            <Image 
+              src="/SettingsWheel.png" 
+              alt="Settings" 
+              width={64} // Approximate size equivalent to h-16
+              height={64} 
+              priority // Ensures it loads quickly
+            />
           </button>
         </div>
 

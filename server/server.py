@@ -24,7 +24,8 @@ Used to fetch all scenarios dynamically from the database in order to display on
 Used to fetch prompts based on unique scenario_id to display to user and facilitate the simulation
 """
 
-from flask import Flask, jsonify, request
+
+from flask import Flask, jsonify, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc
 import os
@@ -33,6 +34,8 @@ from flask_cors import CORS
 import io
 import numpy as np
 import tempfile
+from supabase_client import supabase
+import jwt
 
 # Azure AI OpenAI models:
 from openai import AzureOpenAI
@@ -48,6 +51,9 @@ CORS(app)
 
 # Load environment variables
 load_dotenv()
+
+# secret key for JWT to work
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 
 # Determine if running in production
 FLASK_ENV = os.environ.get("FLASK_ENV", "production")
@@ -105,19 +111,8 @@ class Prompt(db.Model):
     def __repr__(self):
         return f"<Prompt {self.id} - Scenario {self.scenario_id}>"
 
-@app.route("/", methods=['GET'])
-def home():
-    return jsonify({
-        'message': "Welcome to the Flask API!",
-        'endpoints': ['/get_prompt', '/evaluate', '/api/home']
-    })
-
 @app.route('/get_scenarios', methods=['GET'])
 def get_scenarios():
-
-    # TO REMOVE LATER, A WAY TO RESET RESULTS VECTOR
-    # STILL WILL BREAK UNDER CONCURRENT USERS
-    result_vec.clear()
 
     scenarios = Scenario.query.all()
     return jsonify([
@@ -173,43 +168,65 @@ def evaluate():
     expected_vec = model.encode([prompt.expected_response])[0]
     user_vec = model.encode([user_input])[0]
 
-    # Compute cosine similarity (the closer to 1, the more similar)
-    similarity_score = 1 - distance.cosine(user_vec, expected_vec)
+    # distance is in [0,2] where 0 is identical, 1 is unrelated, and 0 is opposite
+    cos_distance = distance.cosine(user_vec, expected_vec)
+
+    # normalized score
+    similarity_score = 1 - (cos_distance / 2) 
     print(f"Similarity score: {similarity_score}")
 
     # Threshold to determine correct or not
-    threshold = 0.6
+    threshold = 0.75
     is_correct = similarity_score >= threshold
-    result_vec.append(is_correct)
 
     print(f"Correct? {is_correct}")
-    print(f"Results Vector: {result_vec}")
 
     return jsonify({'is_correct': bool(is_correct),
                     'score': f"{int(similarity_score * 100)}%"})
 
 # /api/home endpoint
-@app.route("/api/home", methods=['GET'])
+@app.route("/", methods=['GET'])
 def return_home():
     return jsonify({
-        'message': "We are team 13 :)",
+        'message': "Management Engineering c/o 2025 Capstone",
         'team': ['Thomas', 'Saleh', 'Abhinav', 'Matt', 'John']
     })
 
-@app.route("/api/results", methods=['GET'])
-def get_results():
-    # Score/Result of the User
-    correct_answers = sum(result_vec)
-    total_questions = len(result_vec)
-    score = correct_answers / total_questions
+@app.route("/store_results", methods=['POST'])
+def store_results():
+    data = request.get_json()
 
-    results = {
-        "score": score,
-        "correct_answers": int(correct_answers),
-        "total_questions": total_questions,
-        "feedback": "Great job!"
-    }
-    return jsonify(results)
+    print("results data:", data)
+
+    # Extracting required fields from request
+    user_id = data.get("user_id")
+    scenario_id = data.get("scenario_id")
+    category = data.get("category")
+    num_correct = data.get("num_correct")
+    num_prompts = data.get("num_prompts")
+
+    # Validation: Ensure all required fields are present (allow 0 values)
+    if any(value is None for value in [user_id, scenario_id, category, num_correct, num_prompts]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    try:
+        # Insert data into Supabase "results" table
+        response = supabase.table("results").insert([{
+            "user_id": user_id,
+            "scenario_id": scenario_id,
+            "category": category,
+            "num_correct": num_correct,
+            "num_prompts": num_prompts
+        }]).execute()
+
+        # Debugging: Print Supabase response
+        print("Supabase response:", response)
+
+        return jsonify({"message": "Added result to DB"}), 200
+
+    except Exception as e:
+        return jsonify({"error": "Failed to add result to DB", "details": str(e)}), 500
+
 
 # API to get audio file from user input, transcribe it, return to front end
 @app.route('/upload_audio', methods=['POST'])
@@ -235,13 +252,96 @@ def upload_audio():
             )
 
         print(result.text)
-        
+      
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
     os.remove(temp_path)
 
     return jsonify({'transcript': result.text}), 200
+
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    try:
+        # Attempt to sign up the user
+        res = supabase.auth.sign_up({"email": email, "password": password})
+
+        # If Supabase returns a user, check if they are confirmed
+        user = res.user
+
+        if user and not user.confirmed_at:
+            return jsonify({
+                "message": "Sign-up successful! Please check your email to confirm your account before signing in.",
+                "requires_verification": True
+            }), 200
+
+        return jsonify({
+            "message": "Sign-up successful!",
+            "user_id": user.id if user else None
+        }), 200
+
+    except Exception as e:
+        error_message = str(e)
+
+        # Check if the error is due to the user already being signed up but not confirmed
+        if "User already registered" in error_message:
+            return jsonify({
+                "message": "This email is already registered but not verified. Please check your email to confirm your account.",
+                "requires_verification": True
+            }), 200
+
+        return jsonify({"error": "Sign-up failed", "details": error_message}), 500
+
+@app.route("/signin", methods=["POST"])
+def signin():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    try:
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        session_data = res.session  # This contains JWT and user session
+
+        if session_data is None:
+            return jsonify({"error": "Invalid credentials or email not confirmed."}), 401
+
+        user = session_data.user
+        serializable_session = {
+            "access_token": session_data.access_token,
+            "refresh_token": session_data.refresh_token,
+            "expires_in": session_data.expires_in,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "confirmed_at": user.confirmed_at,  # if available
+                # add any other user fields you need
+            }
+            }
+
+        return jsonify({"message": "Login successful!", "session": serializable_session})
+
+    except Exception as e:
+        print(str(e))
+        return jsonify({"error": "Sign in failed", "details": str(e)}), 401
+
+@app.route("/signout", methods=["POST"])
+def signout():
+    try:
+        supabase.auth.sign_out()  # Sign out the user
+        return jsonify({"message": "Logout successful"}), 200
+    except Exception as e:
+        return jsonify({"error": "Logout failed", "details": str(e)}), 500
 
     
 # this will run for local development
