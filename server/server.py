@@ -48,8 +48,6 @@ from sentence_transformers import SentenceTransformer
 app = Flask(__name__)
 CORS(app)
 
-app.secret_key = os.environ.get("FLASK_SECRET_KEY")
-
 
 # Load environment variables
 load_dotenv()
