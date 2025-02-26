@@ -32,7 +32,7 @@ export default function SignInPage() {
           console.error("Token storage failed, retrying...");
           return; // Prevent redirect if storage fails
         }
-        router.push("/");
+        window.location.href = "/";
       } else {
         setErrorMsg(data.error || "Sign in failed.");
       }
