@@ -2,7 +2,8 @@ import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
 
 export default function ScenarioStartPage() {
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  
   const router = useRouter();
   const { scenarioId } = router.query;  // Get scenarioId from URL
   const [scenario, setScenario] = useState(null);
