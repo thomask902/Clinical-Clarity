@@ -48,7 +48,6 @@ export default function SignInPage() {
         {/* Left Section: Logo & Title */}
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">Clinical Clarity</h1>
-          <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
                 src="/ClinicalClarityLogo.png"
@@ -56,7 +55,6 @@ export default function SignInPage() {
                 className="h-12"
               />
             </div>
-          </Link>
         </div>
       </header>
 
