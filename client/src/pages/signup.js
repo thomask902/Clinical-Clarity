@@ -1,6 +1,8 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+
 
 export default function SignupPage() {
   const router = useRouter();
@@ -41,10 +43,12 @@ export default function SignupPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">Clinical Clarity</h1>
             <div className="flex items-center cursor-pointer">
-              <img
+              <Image
                 src="/ClinicalClarityLogo.png"
                 alt="Clinical Clarity Logo"
-                className="h-12"
+                width={48} // Set appropriate width
+                height={48} // Set appropriate height
+                priority // Ensures it loads quickly
               />
             </div>
         </div>
