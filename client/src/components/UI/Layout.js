@@ -3,6 +3,30 @@ import { useRouter } from "next/router";
 
 export default function Layout({ children }) {
   const router = useRouter();
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  const handleSignOut = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/signout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+  
+      if (response.ok) {
+        console.log("Logout Successful")
+        // remove JWT and user from local storage
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user");
+        router.push("/signin"); // Redirect to login page after sign-out
+      } else {
+        console.error("Sign out failed:", await response.json());
+        alert("Sign out failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error during sign out:", error);
+      alert("An unexpected error occurred.");
+    }
+  };
 
   return (
     <div className="min-h-screen font-sans text-gray-900">
@@ -10,7 +34,7 @@ export default function Layout({ children }) {
       <header className="flex items-center justify-between p-4 bg-[#E8F8FF] shadow-md w-full">
         {/* Left Section: Logo & Title */}
         <div className="flex items-center gap-3">
-        <h1 className="text-xl font-bold">Clinical Clarity</h1>
+          <h1 className="text-xl font-bold">Clinical Clarity</h1>
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
@@ -49,8 +73,13 @@ export default function Layout({ children }) {
           </button>
         </div>
 
-        {/* Right Section: Empty Space (Keeps Navbar Centered) */}
-        <div className="w-32"></div>
+        {/* Right Section: Sign Out Button */}
+        <div className="w-32 flex justify-end">
+          <button className="nav-button" onClick={handleSignOut}>
+            <img src="/signout.ico" alt="Sign Out" className="h-8" />
+            <p className="nav-text">Sign Out</p>
+          </button>
+        </div>
       </header>
 
       {/* Page Content */}

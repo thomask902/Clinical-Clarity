@@ -30,7 +30,7 @@ export default function ScenarioStartPage() {
     };
 
     fetchScenario();
-  }, [scenarioId]); // Runs when scenarioId changes
+  }, [scenarioId, API_BASE_URL]); // Runs when scenarioId changes
 
   // Handle clicking outside of popup
   useEffect(() => {
