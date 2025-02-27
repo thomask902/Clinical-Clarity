@@ -89,7 +89,6 @@ class Scenario(db.Model):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     door_sign = db.Column(db.Text, nullable=True)
-    vital_signs = db.Column(db.JSON, nullable=True)  # JSON for structured data
     instructions = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
@@ -145,7 +144,6 @@ def get_prompt(scenario_id):
                 'title': scenario.title,
                 'description': scenario.description,
                 'door_sign': scenario.door_sign,
-                'vital_signs': scenario.vital_signs,
                 'instructions': scenario.instructions
             }
         })
