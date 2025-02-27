@@ -273,6 +273,44 @@ def upload_audio():
 
     return jsonify({'transcript': result.text}), 200
 
+@app.route('/llm_patient_response', methods=['POST'])
+def llm_patient_response():
+    data = request.get_json()
+
+    # e.g. "Was there anything specific you were worried the blood tests might show?"
+    user_input = data.get("user_input")
+
+    # append user input to conversation_structure
+    system_prompt = data.get("system_prompt")
+
+    conversation_structure = [
+        {
+            "role": "system",
+            "content": system_prompt
+        }
+    ]
+
+    conversation_structure.append({"role": "user", "content": user_input})
+
+    messages=conversation_structure
+    try:
+        
+        completion = llm_client.chat.completions.create(
+            model = llm_deployment_id,
+            modalities=["text", "audio"],
+            audio = {"voice": "alloy", "format": "wav"},
+            messages=messages
+        )
+        
+        return jsonify({
+            "patient_response_text": completion.choices[0].message.audio.transcript
+        }), 200
+
+    except Exception as e:
+        error_message = str(e)
+
+        return jsonify({"error": "LLM Request failed", "details": error_message}), 500
+
 
 @app.route("/signup", methods=["POST"])
 def signup():

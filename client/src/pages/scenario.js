@@ -45,6 +45,8 @@ export default function ScenarioPage() {
 
   // llm stuff
   const [patientResponse, setPatientResponse] = useState('')
+  const [systemPrompt, setSystemPrompt] = useState('')
+  const [userInputList, setUserInputList] = useState([])
 
   useEffect(() => {
     if (!scenarioId) return; // ✅ Prevent fetching if scenarioId is missing
@@ -60,6 +62,10 @@ export default function ScenarioPage() {
         }
 
         setPrompts(data.prompts);
+
+        // set the 
+        setSystemPrompt(data.scenario.system_prompt)
+
       } catch (error) {
         console.error('Error fetching prompts:', error);
       }
@@ -67,6 +73,10 @@ export default function ScenarioPage() {
 
     fetchPrompts();
   }, [scenarioId, API_BASE_URL]);
+
+  const addUserInputList = (newUserInput) => {
+    setUserInputList(prevList => [...prevList, newUserInput]);
+  };
 
   const submitResponse = async () => {
     if (!prompts.length || currentPromptIndex >= prompts.length) {
@@ -103,6 +113,33 @@ export default function ScenarioPage() {
         await submitResponse();
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
+
+      // Call API for LLM response to get created
+
+      
+
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/llm_patient_response`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_input: userInput,
+            system_prompt: systemPrompt
+          }),
+
+        });
+        const data = await response.json();
+        setPatientResponse(data.patient_response_text)
+      } catch (error) {
+        console.error('Error evaluating response:', error);
+      }
+
+
+      //setPatientResponse(llm_patient_response)
+
+
+
       setCurrentPromptIndex(currentPromptIndex + 1);
       setResult('');
       setUserInput('');
@@ -184,8 +221,8 @@ export default function ScenarioPage() {
         <>
           {/* Prompt Section */}
           <div className="text-center">
-            <h3 className="text-xl font-semibold">Prompt:</h3>
-            <p className="text-lg text-gray-700">{prompts[currentPromptIndex]?.patient_prompt}</p>
+            <h3 className="text-xl font-semibold">Patient Response:</h3>
+            <p className="text-lg text-gray-700">{patientResponse}</p>
           </div>
   
           {/* Input Field */}
