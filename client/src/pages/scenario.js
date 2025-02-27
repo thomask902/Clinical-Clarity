@@ -43,6 +43,9 @@ export default function ScenarioPage() {
   const [score, setScore] = useState('');
   const [audioRecorderKey, setAudioRecorderKey] = useState(0);
 
+  // llm stuff
+  const [patientResponse, setPatientResponse] = useState('')
+
   useEffect(() => {
     if (!scenarioId) return; // ✅ Prevent fetching if scenarioId is missing
 

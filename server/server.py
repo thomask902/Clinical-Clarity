@@ -29,6 +29,7 @@ from flask import Flask, jsonify, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc
 import os
+import base64
 from dotenv import load_dotenv
 from flask_cors import CORS
 import io
@@ -81,6 +82,15 @@ stt_client = AzureOpenAI(
 # Corresponds to the custom name we chose for that deployment (on deployment Azure site)
 stt_deployment_id = "whisper" 
 
+# GPT LLM Client load
+llm_client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_GPT_4O_AUDIO_API_KEY"),  
+    api_version="2025-01-01-preview",
+    azure_endpoint = os.getenv("AZURE_OPENAI_GPT_4O_AUDIO_ENDPOINT")
+)
+# Corresponds to the custom name we chose for that deployment (on deployment Azure site)
+llm_deployment_id = "gpt-4o-audio-preview"
+
 # Define the Scenario table
 class Scenario(db.Model):
     __tablename__ = 'scenarios'
@@ -89,8 +99,8 @@ class Scenario(db.Model):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     door_sign = db.Column(db.Text, nullable=True)
-    vital_signs = db.Column(db.JSON, nullable=True)  # JSON for structured data
     instructions = db.Column(db.Text, nullable=True)
+    system_prompt = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f"<Scenario {self.id} - {self.title}>"
@@ -130,25 +140,28 @@ def get_prompt(scenario_id):
     prompts = Prompt.query.filter_by(scenario_id=scenario_id).order_by(asc(Prompt.sequence_order)).all()
     if prompts:
         scenario = Scenario.query.get(scenario_id)
-        return jsonify({
-            'prompts': [
-                {
-                    'id': prompt.id,
-                    'expected_response': prompt.expected_response,
-                    'patient_prompt': prompt.patient_prompt,
-                    'category': prompt.category,
-                    'sequence_order': prompt.sequence_order
-                } for prompt in prompts
-            ],
-            'scenario': {
-                'id': scenario.id,
-                'title': scenario.title,
-                'description': scenario.description,
-                'door_sign': scenario.door_sign,
-                'vital_signs': scenario.vital_signs,
-                'instructions': scenario.instructions
+        return jsonify(
+            {
+                'prompts': [
+                    {
+                        'id': prompt.id,
+                        'expected_response': prompt.expected_response,
+                        'patient_prompt': prompt.patient_prompt,
+                        'category': prompt.category,
+                        'sequence_order': prompt.sequence_order
+                    } 
+                    for prompt in prompts
+                ],
+                'scenario': {
+                    'id': scenario.id,
+                    'title': scenario.title,
+                    'description': scenario.description,
+                    'door_sign': scenario.door_sign,
+                    'instructions': scenario.instructions,
+                    'system_prompt': scenario.system_prompt
+                }
             }
-        })
+        )
     else:
         return jsonify({'error': 'No prompts found for this scenario'}), 404
 
