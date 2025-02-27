@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
-// Authentication hook to check if the user is logged in
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
+  const publicPages = ["/signin", "/signup"];
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (!token) {
-      // redirect to login if user is not authenticated
-      router.push("/signin");
-    } else {
+    if (!token && !publicPages.includes(router.pathname)) {
+      router.replace("/signin");
+    } else if (token) {
       setIsAuthenticated(true);
     }
   }, [router]);
