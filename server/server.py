@@ -25,7 +25,7 @@ Used to fetch prompts based on unique scenario_id to display to user and facilit
 """
 
 
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, jsonify, request, redirect, send_file, after_this_request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc
 import os
@@ -275,41 +275,41 @@ def upload_audio():
 
 @app.route('/llm_patient_response', methods=['POST'])
 def llm_patient_response():
-    data = request.get_json()
 
-    # e.g. "Was there anything specific you were worried the blood tests might show?"
-    user_input = data.get("user_input")
-
-    # append user input to conversation_structure
-    system_prompt = data.get("system_prompt")
-
-    conversation_structure = [
-        {
-            "role": "system",
-            "content": system_prompt
-        }
-    ]
-
-    conversation_structure.append({"role": "user", "content": user_input})
-
-    messages=conversation_structure
     try:
+        data = request.get_json()
+
+        # e.g. "Was there anything specific you were worried the blood tests might show?"
+        user_input = data.get("user_input")
+
+        # append user input to conversation_structure
+        system_prompt = data.get("system_prompt")
+
+        conversation_structure = [
+            {
+                "role": "system",
+                "content": system_prompt
+            }
+        ]
         
+        messages = conversation_structure
+
         completion = llm_client.chat.completions.create(
             model = llm_deployment_id,
             modalities=["text", "audio"],
             audio = {"voice": "alloy", "format": "wav"},
             messages=messages
         )
-        
-        return jsonify({
-            "patient_response_text": completion.choices[0].message.audio.transcript
-        }), 200
 
+        wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
+        wav_io = io.BytesIO(wav_bytes)
+        wav_io.seek(0)  # Ensure the pointer is at the beginning
+
+        return send_file(wav_io, mimetype='audio/wav')
     except Exception as e:
-        error_message = str(e)
+        return jsonify({'error': str(e)}), 500
+    
 
-        return jsonify({"error": "LLM Request failed", "details": error_message}), 500
 
 
 @app.route("/signup", methods=["POST"])
@@ -378,7 +378,7 @@ def signin():
                 "confirmed_at": user.confirmed_at,  # if available
                 # add any other user fields you need
             }
-            }
+        }
 
         return jsonify({"message": "Login successful!", "session": serializable_session})
 

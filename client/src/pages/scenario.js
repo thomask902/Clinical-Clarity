@@ -45,6 +45,7 @@ export default function ScenarioPage() {
 
   // llm stuff
   const [patientResponse, setPatientResponse] = useState('')
+  const [patientResponseAudio, setPatientResponseAudio] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
   const [userInputList, setUserInputList] = useState([])
 
@@ -115,10 +116,6 @@ export default function ScenarioPage() {
       }
 
       // Call API for LLM response to get created
-
-      
-
-
       try {
         const response = await fetch(`${API_BASE_URL}/llm_patient_response`, {
           method: 'POST',
@@ -127,19 +124,30 @@ export default function ScenarioPage() {
             user_input: userInput,
             system_prompt: systemPrompt
           }),
-
         });
-        const data = await response.json();
-        setPatientResponse(data.patient_response_text)
+
+        // make sure response is ok
+        console.log("Response status:", response.status);  // Should be 200 if it’s successful
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+
+        // convert response into a blob (file-like JS object)
+        const audioBlob = await response.blob();
+
+        // create URL with audio blob
+        const audioUrl = URL.createObjectURL(audioBlob)
+        setPatientResponseAudio(audioUrl)
+
+        console.log("Audio URL:", patientResponseAudio);
+        console.log("Audio URL:", audioUrl);
+        
+//      setPatientResponse(data.patient_response_text)
+//      setPatientResponse(llm_patient_response)
+
       } catch (error) {
         console.error('Error evaluating response:', error);
       }
-
-
-      //setPatientResponse(llm_patient_response)
-
-
-
       setCurrentPromptIndex(currentPromptIndex + 1);
       setResult('');
       setUserInput('');
@@ -224,7 +232,14 @@ export default function ScenarioPage() {
             <h3 className="text-xl font-semibold">Patient Response:</h3>
             <p className="text-lg text-gray-700">{patientResponse}</p>
           </div>
-  
+          {patientResponseAudio ? (
+            <audio controls>
+              <source src={patientResponseAudio} type="audio/wav" />
+              Your browser does not support the audio element.
+            </audio>
+          ) : (
+            <p>Loading audio...</p>
+          )}
           {/* Input Field */}
           <input
             type="text"
