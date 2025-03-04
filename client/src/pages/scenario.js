@@ -67,7 +67,7 @@ export default function ScenarioPage() {
       setResult(data.is_correct ? "Correct!" : "False!");
       setScore(data.score);
 
-      // If the response is wrong, prepare the expected response but don't show it yet
+      // If the response is wrong, prepare the expected response but do not show it yet
       if (!data.is_correct) {
         setPreviousExpectedResponse(currentPrompt.expected_response);
         setShowExpectedResponse(false); // Prevent it from showing immediately
