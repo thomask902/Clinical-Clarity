@@ -2,26 +2,51 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import AudioRecorder from "../components/AudioRecorder";
 
+/*
+Scenario Page:
+
+Page where the scenarios are simulated for a patient interaction.
+
+Functions:
+
+handleCheckAndNext:
+- Checks the user's response, evaluates it, and moves to the next prompt after a delay.
+- If incorrect, stores the expected response but does not show it immediately.
+- Displays the expected response only after the new prompt appears.
+
+handleTranscriptionReady:
+- Callback function to retrieve transcript data from the AudioRecorder component.
+- Updates the userInput variable using setUserInput.
+
+Returns:
+- Simulated scenario with options to evaluate responses and move to the next prompt.
+- Provides a button to view the scenario door sign.
+- Shows expected responses for incorrect answers.
+- Displays a final results button at the end.
+*/
+
 export default function ScenarioPage() {
   const router = useRouter();
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { scenarioId } = router.query;
 
-  const [scenario, setScenario] = useState(null);
-  const [prompts, setPrompts] = useState([]);
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
-  const [userInput, setUserInput] = useState("");
-  const [result, setResult] = useState("");
-  const [resultList, setResultList] = useState([]);
-  const [score, setScore] = useState("");
-  const [audioRecorderKey, setAudioRecorderKey] = useState(0);
-  const [isDoorSignVisible, setIsDoorSignVisible] = useState(false);
-  const [previousExpectedResponse, setPreviousExpectedResponse] = useState(null); // Stores expected response
-  const [showExpectedResponse, setShowExpectedResponse] = useState(false); // Controls when it appears
+  // State variables for managing the scenario and user interaction
+  const [scenario, setScenario] = useState(null); // Stores scenario details
+  const [prompts, setPrompts] = useState([]); // Stores list of prompts for the scenario
+  const [currentPromptIndex, setCurrentPromptIndex] = useState(0); // Tracks the current prompt index
+  const [userInput, setUserInput] = useState(""); // Stores user input
+  const [result, setResult] = useState(""); // Stores the evaluation result
+  const [resultList, setResultList] = useState([]); // Stores list of all response results
+  const [score, setScore] = useState(""); // Stores the score returned from evaluation
+  const [audioRecorderKey, setAudioRecorderKey] = useState(0); // Used to reset the AudioRecorder component
+  const [isDoorSignVisible, setIsDoorSignVisible] = useState(false); // Controls visibility of the door sign
+  const [previousExpectedResponse, setPreviousExpectedResponse] = useState(null); // Stores the expected response of the last incorrect answer
+  const [showExpectedResponse, setShowExpectedResponse] = useState(false); // Controls when expected response is shown
 
   useEffect(() => {
     if (!scenarioId) return;
 
+    // Fetch scenario details and prompts from the backend
     const fetchScenarioData = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/get_prompt/${scenarioId}`);
@@ -44,6 +69,7 @@ export default function ScenarioPage() {
 
   const isFinalPrompt = currentPromptIndex === prompts.length - 1;
 
+  // Handles user response evaluation and moves to the next prompt
   const handleCheckAndNext = async () => {
     if (!prompts.length || currentPromptIndex >= prompts.length) {
       alert("No prompt to respond to.");
@@ -67,16 +93,15 @@ export default function ScenarioPage() {
       setResult(data.is_correct ? "Correct!" : "False!");
       setScore(data.score);
 
-      // If the response is wrong, prepare the expected response but do not show it yet
       if (!data.is_correct) {
         setPreviousExpectedResponse(currentPrompt.expected_response);
-        setShowExpectedResponse(false); // Prevent it from showing immediately
+        setShowExpectedResponse(false);
       } else {
-        setPreviousExpectedResponse(null); // Clear if they got it right
+        setPreviousExpectedResponse(null);
         setShowExpectedResponse(false);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Delay before moving to the next prompt
 
       if (!isFinalPrompt) {
         setCurrentPromptIndex((prevIndex) => prevIndex + 1);
@@ -84,8 +109,6 @@ export default function ScenarioPage() {
         setUserInput("");
         setScore("");
         setAudioRecorderKey((prevKey) => prevKey + 1);
-        
-        // Show the expected response **only after the new prompt appears**
         setTimeout(() => setShowExpectedResponse(true), 100);
       }
     } catch (error) {
@@ -93,6 +116,7 @@ export default function ScenarioPage() {
     }
   };
 
+  // Updates user input with transcript from the AudioRecorder component
   const handleTranscriptionReady = (transcript) => {
     setUserInput(transcript);
   };
@@ -107,7 +131,7 @@ export default function ScenarioPage() {
 
   return (
     <div className="main-container flex flex-col items-center justify-center min-h-screen gap-6 p-6 relative">
-      {/* Bottom Left - Return to Selection & View Door Sign */}
+      {/* Navigation buttons */}
       <div className="absolute bottom-6 left-6 flex gap-4">
         <button onClick={() => router.push("/scenarioselection")} className="button-secondary">
           Return to Selection
@@ -117,14 +141,13 @@ export default function ScenarioPage() {
         </button>
       </div>
 
-      {/* Bottom Right - End Scenario */}
       <div className="absolute bottom-6 right-6">
         <button onClick={() => router.push("/results")} className="button-secondary">
           End Scenario
         </button>
       </div>
 
-      {/* Scenario Door Sign Popup */}
+      {/* Display door sign popup */}
       {isDoorSignVisible && scenario && (
         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-black rounded-lg w-96 p-5 shadow-lg z-50">
           <h3 className="text-lg font-semibold text-center">Scenario Door Sign</h3>
@@ -136,53 +159,11 @@ export default function ScenarioPage() {
           </div>
         </div>
       )}
-
-      {/* Display Previous Expected Response if the Last Response Was Wrong (Only after Next Prompt Appears) */}
+      
+      {/* Display expected response only if the previous answer was incorrect */}
       {showExpectedResponse && previousExpectedResponse && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg w-full max-w-lg text-center">
           <p><strong>Previous Expected Response:</strong> {previousExpectedResponse}</p>
-        </div>
-      )}
-
-      {/* Prompt Section */}
-      <div className="text-center">
-        <h3 className="text-xl font-semibold">Prompt:</h3>
-        <p className="text-lg text-gray-700">{prompts[currentPromptIndex]?.patient_prompt}</p>
-      </div>
-
-      {!isFinalPrompt ? (
-        <>
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your response or start recording"
-            className="border-2 border-black p-3 rounded-lg w-full max-w-lg"
-          />
-          <div className="flex gap-4 mt-4">
-            <AudioRecorder key={audioRecorderKey} onTranscriptReady={handleTranscriptionReady} />
-            <button
-              onClick={handleCheckAndNext}
-              className={userInput.trim() ? "button-primary" : "button-secondary"}
-              disabled={!userInput.trim()}
-            >
-              Check
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="mt-5">
-          <button onClick={() => router.push("/results")} className="button-primary">
-            See Results
-          </button>
-        </div>
-      )}
-
-      {result && (
-        <div className="mt-5 font-bold text-lg" style={{ color: result === "Correct!" ? "green" : "red" }}>
-          {result}
-          <br />
-          {score}
         </div>
       )}
     </div>
