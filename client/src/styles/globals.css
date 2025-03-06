@@ -46,9 +46,14 @@ body {
 
 
 /* === Improved Buttons === */
-.button {
+.button-primary {
   @apply w-56 px-6 py-3 text-lg rounded-xl text-white bg-gray-900 shadow-lg 
     transition-all duration-300 transform hover:scale-105 hover:bg-gray-700;
+}
+
+.button-secondary {
+  @apply w-56 px-6 py-3 text-lg rounded-xl text-gray-900 bg-gray-200 shadow-md
+    transition-all duration-300 transform hover:scale-105 hover:bg-gray-300;
 }
 
 /* === Navigation Bar (Centered in Header) === */
@@ -70,7 +75,7 @@ body {
 
 /* === Scenario Cards === */
 .scenario-card {
-  @apply relative bg-white border border-gray-300 p-4 rounded-xl shadow-md cursor-pointer transition-transform duration-300;
+  @apply relative bg-white border border-gray-300 p-6 rounded-xl shadow-md cursor-pointer transition-transform duration-300;
 }
 
 .scenario-card:hover {
@@ -85,3 +90,4 @@ body {
 .scenario-card:hover .scenario-hover {
   @apply opacity-90;
 }
+

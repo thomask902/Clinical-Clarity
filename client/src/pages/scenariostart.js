@@ -1,29 +1,25 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
-import Image from "next/image";
 
 export default function ScenarioStartPage() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-  
   const router = useRouter();
-  const { scenarioId } = router.query;  // Get scenarioId from URL
+  const { scenarioId } = router.query;
   const [scenario, setScenario] = useState(null);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const popupRef = useRef(null);
 
   useEffect(() => {
-    if (!scenarioId) return; // Prevent fetching before ID is available
+    if (!scenarioId) return;
 
     const fetchScenario = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/get_prompt/${scenarioId}`);
         const data = await response.json();
-
         if (data.error) {
           console.error(data.error);
           return;
         }
-
         setScenario(data.scenario);
       } catch (error) {
         console.error('Error fetching scenario:', error);
@@ -31,9 +27,8 @@ export default function ScenarioStartPage() {
     };
 
     fetchScenario();
-  }, [scenarioId, API_BASE_URL]); // Runs when scenarioId changes
+  }, [scenarioId, API_BASE_URL]);
 
-  // Handle clicking outside of popup
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
@@ -56,48 +51,30 @@ export default function ScenarioStartPage() {
   }
 
   return (
-    <div>
-      {/* Main Content Section */}
-      <div className="main-container">
-        <div className="flex items-center gap-5"> 
-          <h1>Welcome to the start of the scenario!</h1>
-          {/* Settings Button */}
-          <button onClick={() => setIsPopupVisible(!isPopupVisible)}>
-            <Image 
-              src="/SettingsWheel.png" 
-              alt="Settings" 
-              width={64} // Approximate size equivalent to h-16
-              height={64} 
-              priority // Ensures it loads quickly
-            />
-          </button>
-        </div>
+    <div className="main-container flex flex-col justify-center items-center min-h-screen p-8 text-center">
+      {/* Title */}
+      <h1 className="text-2xl font-bold mb-4">Welcome to the Scenario!</h1>
 
-        {/* Scenario Details */}
-        <div className="text-center mt-5">
-          <p>{scenario.door_sign}</p>
-        </div>
+      {/* Scenario Details */}
+      <div className="max-w-2xl bg-gray-100 p-6 rounded-lg shadow-md">
+        <p className="text-lg leading-relaxed">
+          <strong>Door Sign:</strong>
+          <br />
+          {scenario.door_sign}
+        </p>
+      </div>
 
-        {/* Popup */}
-        {isPopupVisible && (
-          <div ref={popupRef} className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-black rounded-lg w-96 h-72 p-5 shadow-lg z-50">
-            <p className="text-center text-lg">Settings Menu</p>
-          </div>
-        )}
+      {/* Buttons */}
+      <div className="flex gap-6 mt-6">
+        {/* Back Button */}
+        <button onClick={() => router.push('/scenarioselection')} className="button-secondary">
+          Select A Different Scenario
+        </button>
 
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-5 mt-5">
-          {/* Back to Home Button */}
-          <button onClick={() => router.push('/')} className="button">
-            Select A Different Scenario
-          </button>
-
-          {/* Start Button */}
-          <button onClick={() => router.push(`/scenario?scenarioId=${scenario.id}`)} className='button'>
-  Start Scenario
-</button>
-
-        </div>
+        {/* Start Button */}
+        <button onClick={() => router.push(`/scenario?scenarioId=${scenario.id}`)} className="button-primary">
+          Start Scenario
+        </button>
       </div>
     </div>
   );

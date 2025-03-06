@@ -17,7 +17,7 @@ export default function Index() {
 
       {/* Button Section */}
       <div className="mt-8">
-        <button className="button" onClick={() => router.push("/scenarioselection")}>
+        <button className="button-primary" onClick={() => router.push("/scenarioselection")}>
           Scenario Selection
         </button>
       </div>

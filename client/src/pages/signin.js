@@ -113,7 +113,7 @@ export default function SignInPage() {
 
           {/* Sign In Button */}
           <button
-            className="button w-full py-2 mt-2"
+            className="button-primary"
             onClick={handleSignIn}
           >
             Sign In

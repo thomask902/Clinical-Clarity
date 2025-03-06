@@ -149,28 +149,25 @@ def get_prompt(scenario_id):
     prompts = Prompt.query.filter_by(scenario_id=scenario_id).order_by(asc(Prompt.sequence_order)).all()
     if prompts:
         scenario = Scenario.query.get(scenario_id)
-        return jsonify(
-            {
-                'prompts': [
-                    {
-                        'id': prompt.id,
-                        'expected_response': prompt.expected_response,
-                        'patient_prompt': prompt.patient_prompt,
-                        'category': prompt.category,
-                        'sequence_order': prompt.sequence_order
-                    } 
-                    for prompt in prompts
-                ],
-                'scenario': {
-                    'id': scenario.id,
-                    'title': scenario.title,
-                    'description': scenario.description,
-                    'door_sign': scenario.door_sign,
-                    'instructions': scenario.instructions,
-                    'system_prompt': scenario.system_prompt
-                }
+        return jsonify({
+            'prompts': [
+                {
+                    'id': prompt.id,
+                    'expected_response': prompt.expected_response,
+                    'patient_prompt': prompt.patient_prompt,
+                    'category': prompt.category,
+                    'sequence_order': prompt.sequence_order
+                } for prompt in prompts
+            ],
+            'scenario': {
+                'id': scenario.id,
+                'title': scenario.title,
+                'description': scenario.description,
+                'door_sign': scenario.door_sign,
+                'instructions': scenario.instructions,
+                'system_prompt': scenario.system_prompt
             }
-        )
+        })
     else:
         return jsonify({'error': 'No prompts found for this scenario'}), 404
 
