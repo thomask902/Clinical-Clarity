@@ -35,6 +35,9 @@ export default function ScenarioPage() {
   const [prompts, setPrompts] = useState([]);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
+  const [categoryInputs, setCategoryInputs] = useState({});
+  const [categoryPromptIds, setCategoryPromptIds] = useState({}); 
+  const [currentCategory, setCurrentCategory] = useState(""); 
   const [result, setResult] = useState("");
   const [resultList, setResultList] = useState([]);
   const [score, setScore] = useState("");
@@ -75,46 +78,117 @@ export default function ScenarioPage() {
     }
 
     const currentPrompt = prompts[currentPromptIndex];
+    const nextPrompt = prompts[currentPromptIndex + 1]; // Get the next prompt
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/evaluate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_input: userInput,
-          prompt_id: currentPrompt.id,
-        }),
+    // Check if the category is changing
+    if (nextPrompt && currentPrompt.category !== nextPrompt.category) {
+
+      // Print the accumulated inputs for the current category to the console
+      console.log(`Collected inputs for category "${currentPrompt.category}": before last one: ${categoryInputs[currentPrompt.category]}`);
+
+      // Append the current user input to the category inputs before saving
+      setCategoryInputs((prevInputs) => {
+        const updatedInputs = {
+          ...prevInputs,
+          [currentPrompt.category]: prevInputs[currentPrompt.category]
+            ? prevInputs[currentPrompt.category] + " " + userInput // Append user input
+            : userInput, // Start with the current user input
+        };
+
+        // Print the accumulated inputs for the current category to the console
+        console.log(`Collected inputs for category "${currentPrompt.category}": ${updatedInputs[currentPrompt.category]}`);
+
+        return updatedInputs; // Return the updated state
       });
 
-      const data = await response.json();
-      setResultList((prevList) => [...prevList, data.is_correct]);
-      setResult(data.is_correct ? "Correct!" : "False!");
-      setScore(data.score);
+      // Append the current prompt_id to the category prompt_ids before saving
+      setCategoryPromptIds((prevIds) => {
+        const updatedIds = {
+          ...prevIds,
+          [currentPrompt.category]: prevIds[currentPrompt.category]
+            ? prevIds[currentPrompt.category] + " " + currentPrompt.id // Append the prompt_id
+            : currentPrompt.id, // Start with the current prompt_id
+        };
 
-      // If the response is wrong, prepare the expected response but do not show it yet
-      if (!data.is_correct) {
-        setPreviousExpectedResponse(currentPrompt.expected_response);
-        setShowExpectedResponse(false); // Prevent it from showing immediately
-      } else {
-        setPreviousExpectedResponse(null); // Clear if they got it right
-        setShowExpectedResponse(false);
-      }
+        // Print the accumulated prompt_ids for the current category to the console
+        console.log(`Collected prompt_ids for category "${currentPrompt.category}": ${updatedIds[currentPrompt.category]}`);
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+        return updatedIds; // Return the updated state
+      });
 
-      if (!isFinalPrompt) {
-        setCurrentPromptIndex((prevIndex) => prevIndex + 1);
-        setResult("");
-        setUserInput("");
-        setScore("");
-        setAudioRecorderKey((prevKey) => prevKey + 1);
+      try {
+        const response = await fetch(`${API_BASE_URL}/evaluate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_input: categoryInputs,
+            prompt_id: categoryPromptIds[currentPrompt.category],
+          }),
+        });
+  
+        const data = await response.json();
+        setResultList((prevList) => [...prevList, data.is_correct]);
+        setResult(data.is_correct ? "Correct!" : "False!");
+        setScore(data.score);
+  
+        // If the response is wrong, prepare the expected response but do not show it yet
+        if (!data.is_correct) {
+          setPreviousExpectedResponse(currentPrompt.expected_response);
+          setShowExpectedResponse(false); // Prevent it from showing immediately
+        } else {
+          setPreviousExpectedResponse(null); // Clear if they got it right
+          setShowExpectedResponse(false);
+        }
+  
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+  
         
-        // Show the expected response **only after the new prompt appears**
-        setTimeout(() => setShowExpectedResponse(true), 100);
+      } catch (error) {
+        console.error("Error evaluating response:", error);
       }
-    } catch (error) {
-      console.error("Error evaluating response:", error);
+
+      // Now reset the category inputs for the next category
+      setUserInput(""); // Clear user input field
+      setCategoryInputs((prevInputs) => ({
+        ...prevInputs,
+        [nextPrompt.category]: "" // Reset the category for the new prompt's category
+      }));
+
+      setCategoryPromptIds((prevIds) => ({
+        ...prevIds,
+        [nextPrompt.category]: "" // Reset the prompt_id for the new prompt's category
+      }));
+
+
+    } else{
+      // Append the current user input into the category inputs if the category is not changing
+      setCategoryInputs((prevInputs) => ({
+        ...prevInputs,
+        [currentPrompt.category]: prevInputs[currentPrompt.category]
+          ? prevInputs[currentPrompt.category] + " " + userInput // Append user input
+          : userInput, // Start with the current user input
+      }));
+
+      // Append the current prompt_id to the category prompt_ids if the category is not changing
+      setCategoryPromptIds((prevIds) => ({
+        ...prevIds,
+        [currentPrompt.category]: prevIds[currentPrompt.category]
+          ? prevIds[currentPrompt.category] + " " + currentPrompt.id // Append the prompt_id
+          : currentPrompt.id, // Start with the current prompt_id
+      }));
     }
+
+    if (!isFinalPrompt) {
+      setCurrentPromptIndex((prevIndex) => prevIndex + 1);
+      setResult("");
+      setUserInput("");
+      setScore("");
+      setAudioRecorderKey((prevKey) => prevKey + 1);
+      
+      // Show the expected response **only after the new prompt appears**
+      setTimeout(() => setShowExpectedResponse(true), 100);
+    }
+
   };
 
   const handleTranscriptionReady = (transcript) => {
