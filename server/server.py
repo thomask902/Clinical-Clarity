@@ -155,15 +155,32 @@ def get_prompt(scenario_id):
 def evaluate():
     data = request.get_json()
     user_input = data.get('user_input')
-    prompt_id = data.get('prompt_id')
+    prompt_ids = str(data.get('prompt_id'))
 
-    # Retrieve the prompt
-    prompt = Prompt.query.get(prompt_id)
-    if not prompt:
-        return jsonify({'error': 'Prompt not found'}), 404
+
+   
+    
+    # Split the space-separated prompt_ids into a list of integers
+    prompt_ids_list = list(map(int, prompt_ids.split()))
+
+    # Initialize an empty string to accumulate the prompts' text
+    combined_prompt = ""
+
+    # Iterate through each prompt_id
+    for prompt_id in prompt_ids_list:
+        # Retrieve the prompt by its ID
+        prompt = Prompt.query.get(prompt_id)
+
+        if not prompt:
+            return jsonify({'error': f'Prompt with id {prompt_id} not found'}), 404
+
+        # Append the prompt's text to the combined_prompt string
+        combined_prompt += " " + prompt.expected_response
+
+
 
     # Encode vectors of response and target
-    expected_vec = model.encode([prompt.expected_response])[0]
+    expected_vec = model.encode([combined_prompt])[0]
     user_vec = model.encode([user_input])[0]
 
     # distance is in [0,2] where 0 is identical, 1 is unrelated, and 0 is opposite
@@ -182,6 +199,7 @@ def evaluate():
     return jsonify({'is_correct': bool(is_correct),
                     'score': f"{int(similarity_score * 100)}%"})
 
+
 # /api/home endpoint
 @app.route("/", methods=['GET'])
 def return_home():
@@ -189,6 +207,7 @@ def return_home():
         'message': "Management Engineering c/o 2025 Capstone",
         'team': ['Thomas', 'Saleh', 'Abhinav', 'Matt', 'John']
     })
+
 
 @app.route("/store_results", methods=['POST'])
 def store_results():
