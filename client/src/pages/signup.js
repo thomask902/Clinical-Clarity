@@ -105,7 +105,7 @@ export default function SignupPage() {
 
           {/* Sign Up Button */}
           <button
-            className="button w-full py-2 mt-2"
+            className="button-primary"
             onClick={handleSignUp}
           >
             Sign Up
