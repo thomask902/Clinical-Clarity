@@ -108,6 +108,19 @@ export default function ScenarioPage() {
     }
   };
 
+  // Helper function to convert base64 string (encoded audio file) to audio Blob
+  const base64ToBlob = (base64, mime) => {
+
+    // atob() function takes a base64-encoded string and decodes it into a raw binary string, where each character represents a byte of the decoded data
+    const binary = atob(base64);
+
+    // Uint8Array.from() creates a typed array of 8-bit unsigned integers. For each character in the binary string, we use char.charCodeAt(0) to get its numerical byte value
+    const byteArray = Uint8Array.from(binary, char => char.charCodeAt(0));
+
+    // create blob, which is file like object. mime type means audio
+    return new Blob([byteArray], { type: mime });
+  }
+
   const moveToNextPrompt = async () => {
     if (currentPromptIndex < prompts.length - 1) {
       if (!responseSubmitted) {
@@ -132,12 +145,34 @@ export default function ScenarioPage() {
           throw new Error("Network response was not ok");
         }
 
+        // return json data from flask api, transcript and base64 audio
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        if (patientResponseAudio) {
+          // Call this revokeObjectURL when you've finished using an object URL to let the browser know not to keep the reference to the file any longer
+          URL.revokeObjectURL(patientResponseAudio);
+        }
+
         // convert response into a blob (file-like JS object)
-        const audioBlob = await response.blob();
+        const audioBlob = base64ToBlob(data.audio_base64, 'audio/wav');
 
         // create URL with audio blob
         const audioUrl = URL.createObjectURL(audioBlob)
         setPatientResponseAudio(audioUrl)
+
+        // set text transcript
+        setPatientResponse(data.patient_transcript)
+
+
+        // convert response into a blob (file-like JS object)
+        // const audioBlob = await response.blob();
+
+        // create URL with audio blob
+        //const audioUrl = URL.createObjectURL(audioBlob)
+        // setPatientResponseAudio(audioUrl)
 
         console.log("Audio URL:", patientResponseAudio);
         console.log("Audio URL:", audioUrl);
@@ -233,7 +268,10 @@ export default function ScenarioPage() {
             <p className="text-lg text-gray-700">{patientResponse}</p>
           </div>
           {patientResponseAudio ? (
-            <audio controls>
+            <audio
+              key={patientResponseAudio}
+              controls
+            >
               <source src={patientResponseAudio} type="audio/wav" />
               Your browser does not support the audio element.
             </audio>

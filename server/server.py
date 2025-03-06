@@ -291,6 +291,8 @@ def llm_patient_response():
                 "content": system_prompt
             }
         ]
+
+        conversation_structure.append({"role": "user", "content": user_input})
         
         messages = conversation_structure
 
@@ -301,11 +303,25 @@ def llm_patient_response():
             messages=messages
         )
 
+        # decode
         wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
-        wav_io = io.BytesIO(wav_bytes)
-        wav_io.seek(0)  # Ensure the pointer is at the beginning
 
-        return send_file(wav_io, mimetype='audio/wav')
+        # get text transcript
+        transcript = completion.choices[0].message.audio.transcript
+        print(transcript)
+        
+        # re-encode audio to base64
+        audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
+
+        #wav_io = io.BytesIO(wav_bytes)
+        #wav_io.seek(0)  # Ensure the pointer is at the beginning
+        
+        # return both in a json file
+        return jsonify({
+            'patient_transcript': transcript,
+            'audio_base64': audio_base64
+        })
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
