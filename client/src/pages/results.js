@@ -62,21 +62,7 @@ export default function ResultsPage() {
       </div>
 
 
-      <button
-        onClick={() => router.push('/')}
-        style={{
-          border: '2px solid black',
-          padding: '12px',
-          borderRadius: '15px',
-          fontSize: '18px',
-          width: '200px',
-          height: '70px',
-          cursor: 'pointer',
-          marginTop: '20px',
-          backgroundColor: '#0070f3',
-          color: 'white',
-        }}
-      >
+      <button onClick={() => router.push("/")} className="button-primary">
         Back to Home
       </button>
     </div>

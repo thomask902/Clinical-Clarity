@@ -19,6 +19,19 @@ export default function ScenarioSelection() {
     scenario.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleSurpriseMe = () => {
+    if (scenarios.length === 0) {
+      alert("No scenarios available!");
+      return;
+    }
+
+    // Select a random scenario ID
+    const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+    // Navigate to the selected scenario
+    router.push(`/scenariostart?scenarioId=${randomScenario.id}`);
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4 text-center">Select a Scenario</h1>
@@ -42,9 +55,12 @@ export default function ScenarioSelection() {
           </div>
         ))}
       </div>
-      <div className="flex justify-center mt-6">
-        <button onClick={() => router.push("/")} className="button">
+      <div className="flex justify-center gap-4 mt-6">
+        <button onClick={() => router.push("/")} className="button-secondary">
           Back to Home
+        </button>
+        <button onClick={handleSurpriseMe} className="button-primary">
+          Surprise Me!
         </button>
       </div>
     </div>
