@@ -1,7 +1,7 @@
 """
 server.py - Handles the server-side logic for loading the model and evaluating responses.
 
-ML Workflow
+Semantic Similarity Workflow
 1. Loads the model when server.js is started.
 2. Implements the /evaluate API:
    - Uses the loaded model to detect semantic similarity.
@@ -17,11 +17,20 @@ Scenario Workflow STT:
 2. breaksdown the user response using Open AI Whisper, transcirbes into text
 3. sends text transcription back to front end
 
+Scenario Workflow LLM:
+1. User records/types their question. then when clicking next prompt after uploading audio, it triggers the /llm_patient_response API
+2. calls LLM API with user question, along with system prompt
+3. sends audio of LLM response in base64 along with text transcript to client
+
+
 /get_scenarios
 Used to fetch all scenarios dynamically from the database in order to display on scenario selection page
 
 /get_prompt
 Used to fetch prompts based on unique scenario_id to display to user and facilitate the simulation
+
+/llm_patient_response
+Used to call LLM API to generate patient response to user question
 """
 
 

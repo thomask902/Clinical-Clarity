@@ -16,6 +16,8 @@ handleTranscriptionReady:
 - When a transcript is ready, callback function to get this data from Child (AudiRecorder component)
 - this updates the userInput variable using setUserInput
 
+base64ToBlob:
+- helper function to turn audio from base64 into blob file like object, for displaying audio file in front end
 
 Returns:
 
