@@ -20,6 +20,8 @@ handleTranscriptionReady:
 - When a transcript is ready, callback function to get this data from Child (AudiRecorder component)
 - this updates the userInput variable using setUserInput
 
+base64ToBlob:
+- helper function to turn audio from base64 into blob file like object, for displaying audio file in front end
 
 Returns:
 
@@ -42,6 +44,12 @@ export default function ScenarioPage() {
   const [resultList, setResultList] = useState([]);
   const [score, setScore] = useState("");
   const [audioRecorderKey, setAudioRecorderKey] = useState(0);
+
+  // llm stuff
+  const [patientResponse, setPatientResponse] = useState('')
+  const [patientResponseAudio, setPatientResponseAudio] = useState('')
+  const [systemPrompt, setSystemPrompt] = useState('')
+  const [userInputList, setUserInputList] = useState([])
   const [isDoorSignVisible, setIsDoorSignVisible] = useState(false);
   const [previousExpectedResponse, setPreviousExpectedResponse] = useState(null); // Stores expected response
   const [showExpectedResponse, setShowExpectedResponse] = useState(false); // Controls when it appears
@@ -61,6 +69,10 @@ export default function ScenarioPage() {
 
         setScenario(data.scenario);
         setPrompts(data.prompts);
+
+        // set the 
+        setSystemPrompt(data.scenario.system_prompt)
+
       } catch (error) {
         console.error("Error fetching scenario data:", error);
       }
@@ -69,7 +81,25 @@ export default function ScenarioPage() {
     fetchScenarioData();
   }, [scenarioId, API_BASE_URL]);
 
+  const addUserInputList = (newUserInput) => {
+    setUserInputList(prevList => [...prevList, newUserInput]);
+  };
+
   const isFinalPrompt = currentPromptIndex === prompts.length - 1;
+
+  // Helper function to convert base64 string (encoded audio file) to audio Blob
+  const base64ToBlob = (base64, mime) => {
+
+    // atob() function takes a base64-encoded string and decodes it into a raw binary string, where each character represents a byte of the decoded data
+    const binary = atob(base64);
+
+    // Uint8Array.from() creates a typed array of 8-bit unsigned integers. For each character in the binary string, we use char.charCodeAt(0) to get its numerical byte value
+    const byteArray = Uint8Array.from(binary, char => char.charCodeAt(0));
+
+    // create blob, which is file like object. mime type means audio
+    return new Blob([byteArray], { type: mime });
+  }
+
 
   const handleCheckAndNext = async () => {
     if (!prompts.length || currentPromptIndex >= prompts.length) {
@@ -141,7 +171,15 @@ export default function ScenarioPage() {
         }
   
         await new Promise((resolve) => setTimeout(resolve, 2000));
-  
+        
+        await patientResponseLLM();
+        if (!isFinalPrompt) {
+          setCurrentPromptIndex((prevIndex) => prevIndex + 1);
+          setResult("");
+          setUserInput("");
+          setScore("");
+          setAudioRecorderKey((prevKey) => prevKey + 1);
+
         
       } catch (error) {
         console.error("Error evaluating response:", error);
@@ -203,6 +241,56 @@ export default function ScenarioPage() {
     );
   }
 
+
+  // LLM patient
+  const patientResponseLLM = async () => {
+
+    // Call API for LLM response to get created
+    try {
+      const response = await fetch(`${API_BASE_URL}/llm_patient_response`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_input: userInput,
+          system_prompt: systemPrompt
+        }),
+      });
+
+      // make sure response is ok
+      console.log("Response status:", response.status);  // Should be 200 if it’s successful
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      // return json data from flask api, transcript and base64 audio
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (patientResponseAudio) {
+        // Call this revokeObjectURL when you've finished using an object URL to let the browser know not to keep the reference to the file any longer
+        URL.revokeObjectURL(patientResponseAudio);
+      }
+
+      // convert response into a blob (file-like JS object)
+      const audioBlob = base64ToBlob(data.audio_base64, 'audio/wav');
+
+      // create URL with audio blob
+      const audioUrl = URL.createObjectURL(audioBlob)
+      setPatientResponseAudio(audioUrl)
+
+      // set text transcript
+      setPatientResponse(data.patient_transcript)
+
+      console.log("Audio URL:", patientResponseAudio);
+      console.log("Audio URL:", audioUrl);
+    
+    } catch (error) {
+      console.error('Error with patient response:', error);
+    }
+  }
+
   return (
     <div className="main-container flex flex-col items-center justify-center min-h-screen gap-6 p-6 relative">
       {/* Bottom Left - Return to Selection & View Door Sign */}
@@ -240,16 +328,27 @@ export default function ScenarioPage() {
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg w-full max-w-lg text-center">
           <p><strong>Previous Expected Response:</strong> {previousExpectedResponse}</p>
         </div>
-      )}
+      )} 
 
-      {/* Prompt Section */}
-      <div className="text-center">
-        <h3 className="text-xl font-semibold">Prompt:</h3>
-        <p className="text-lg text-gray-700">{prompts[currentPromptIndex]?.patient_prompt}</p>
-      </div>
-
+      {/* LLM Patient Section */}
       {!isFinalPrompt ? (
         <>
+          <div className="text-center">
+            <h3 className="text-xl font-semibold">Patient Response:</h3>
+            <p className="text-lg text-gray-700">{patientResponse}</p>
+          </div>
+          {patientResponseAudio ? (
+            <audio
+              key={patientResponseAudio}
+              controls
+            >
+              <source src={patientResponseAudio} type="audio/wav" />
+              Your browser does not support the audio element.
+            </audio>
+          ) : (
+            <p>Please speak to the patient.</p>
+          )}
+          {/* Input Field */}
           <input
             type="text"
             value={userInput}

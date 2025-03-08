@@ -1,7 +1,7 @@
 """
 server.py - Handles the server-side logic for loading the model and evaluating responses.
 
-ML Workflow
+Semantic Similarity Workflow
 1. Loads the model when server.js is started.
 2. Implements the /evaluate API:
    - Uses the loaded model to detect semantic similarity.
@@ -17,18 +17,28 @@ Scenario Workflow STT:
 2. breaksdown the user response using Open AI Whisper, transcirbes into text
 3. sends text transcription back to front end
 
+Scenario Workflow LLM:
+1. User records/types their question. then when clicking next prompt after uploading audio, it triggers the /llm_patient_response API
+2. calls LLM API with user question, along with system prompt
+3. sends audio of LLM response in base64 along with text transcript to client
+
+
 /get_scenarios
 Used to fetch all scenarios dynamically from the database in order to display on scenario selection page
 
 /get_prompt
 Used to fetch prompts based on unique scenario_id to display to user and facilitate the simulation
+
+/llm_patient_response
+Used to call LLM API to generate patient response to user question
 """
 
 
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, jsonify, request, redirect, send_file, after_this_request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.expression import asc
 import os
+import base64
 from dotenv import load_dotenv
 from flask_cors import CORS
 import io
@@ -81,6 +91,15 @@ stt_client = AzureOpenAI(
 # Corresponds to the custom name we chose for that deployment (on deployment Azure site)
 stt_deployment_id = "whisper" 
 
+# GPT LLM Client load
+llm_client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_GPT_4O_AUDIO_API_KEY"),  
+    api_version="2025-01-01-preview",
+    azure_endpoint = os.getenv("AZURE_OPENAI_GPT_4O_AUDIO_ENDPOINT")
+)
+# Corresponds to the custom name we chose for that deployment (on deployment Azure site)
+llm_deployment_id = "gpt-4o-audio-preview"
+
 # Define the Scenario table
 class Scenario(db.Model):
     __tablename__ = 'scenarios'
@@ -90,6 +109,7 @@ class Scenario(db.Model):
     description = db.Column(db.Text, nullable=False)
     door_sign = db.Column(db.Text, nullable=True)
     instructions = db.Column(db.Text, nullable=True)
+    system_prompt = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f"<Scenario {self.id} - {self.title}>"
@@ -144,7 +164,8 @@ def get_prompt(scenario_id):
                 'title': scenario.title,
                 'description': scenario.description,
                 'door_sign': scenario.door_sign,
-                'instructions': scenario.instructions
+                'instructions': scenario.instructions,
+                'system_prompt': scenario.system_prompt
             }
         })
     else:
@@ -277,6 +298,60 @@ def upload_audio():
 
     return jsonify({'transcript': result.text}), 200
 
+@app.route('/llm_patient_response', methods=['POST'])
+def llm_patient_response():
+
+    try:
+        data = request.get_json()
+
+        # e.g. "Was there anything specific you were worried the blood tests might show?"
+        user_input = data.get("user_input")
+
+        # append user input to conversation_structure
+        system_prompt = data.get("system_prompt")
+
+        conversation_structure = [
+            {
+                "role": "system",
+                "content": system_prompt
+            }
+        ]
+
+        conversation_structure.append({"role": "user", "content": user_input})
+        
+        messages = conversation_structure
+
+        completion = llm_client.chat.completions.create(
+            model = llm_deployment_id,
+            modalities=["text", "audio"],
+            audio = {"voice": "alloy", "format": "wav"},
+            messages=messages
+        )
+
+        # decode
+        wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
+
+        # get text transcript
+        transcript = completion.choices[0].message.audio.transcript
+        print(transcript)
+        
+        # re-encode audio to base64
+        audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
+
+        #wav_io = io.BytesIO(wav_bytes)
+        #wav_io.seek(0)  # Ensure the pointer is at the beginning
+        
+        # return both in a json file
+        return jsonify({
+            'patient_transcript': transcript,
+            'audio_base64': audio_base64
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+
+
 
 @app.route("/signup", methods=["POST"])
 def signup():
@@ -344,7 +419,7 @@ def signin():
                 "confirmed_at": user.confirmed_at,  # if available
                 # add any other user fields you need
             }
-            }
+        }
 
         return jsonify({"message": "Login successful!", "session": serializable_session})
 
