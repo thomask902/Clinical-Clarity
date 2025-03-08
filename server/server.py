@@ -130,6 +130,18 @@ class Prompt(db.Model):
     def __repr__(self):
         return f"<Prompt {self.id} - Scenario {self.scenario_id}>"
 
+# Defining the Checklist table
+class Checklist(db.Model):
+    __tablename__ = 'scenario_checklist'
+
+    id = db.Column(db.Integer, primary_key=True)
+    scenario_id = db.Column(db.Integer, nullable=False) 
+    category = db.Column(db.String(255), nullable=False)
+    checklist = db.Column(db.Text, nullable=False)
+
+    def __repr__(self):
+        return f"<Checklist {self.id} - {self.category}>"
+
 @app.route('/get_scenarios', methods=['GET'])
 def get_scenarios():
 
@@ -170,6 +182,25 @@ def get_prompt(scenario_id):
         })
     else:
         return jsonify({'error': 'No prompts found for this scenario'}), 404
+
+# API to retrieve checklist categories and features
+@app.route('/get_checklist', methods=['GET'])
+def get_checklist():
+    try:
+        # Fetch all checklist items from the database
+        checklist_items = Checklist.query.order_by(Checklist.category).all()
+
+        # Group checklist items by category
+        grouped_checklist = {}
+        for item in checklist_items:
+            if item.category not in grouped_checklist:
+                grouped_checklist[item.category] = []
+            grouped_checklist[item.category].append(item.checklist)
+
+        return jsonify(grouped_checklist)
+
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch checklist', 'details': str(e)}), 500
 
 # API to evaluate user input
 @app.route('/evaluate', methods=['POST'])
