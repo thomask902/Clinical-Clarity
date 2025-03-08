@@ -3,68 +3,184 @@ import { useRouter } from 'next/router';
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [results, setResults] = useState(null);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const [scenarioData, setScenarioData] = useState(null);
+  const [LLMFeedback, setLLMFeedback] = useState(null);
 
   useEffect(() => {
-    // Retrieve stored results from localStorage
-    const storedResults = localStorage.getItem('scenario_results');
+    const data = localStorage.getItem('scenario_data');
+    if (!data) return;
 
-    if (storedResults) {
-      setResults(JSON.parse(storedResults));
-    } else {
-      alert("No results found. Redirecting to home...");
-      router.push('/');
-    }
-  }, [router]);
+    const parsedData = JSON.parse(data);
+    console.log("Loaded scenario data:", parsedData);
+    setScenarioData(parsedData);
 
-  if (!results) {
-    return (
-      <div style={{ textAlign: 'center', padding: '20px' }}>
-        <h1>Loading Results...</h1>
-      </div>
-    );
+    // Only get doctor messages from conversation history
+    const doctorMessages = parsedData.conversation_history
+      .filter(msg => msg.role === 'user')
+      .map(msg => msg.content);
+
+    console.log("Doctor messages to evaluate:", doctorMessages);
+
+    const criticResponseLLM = async () => {
+      try {
+        const requestData = {
+          doctor_messages: doctorMessages
+        };
+        console.log("Sending request data:", requestData);
+
+        const response = await fetch(`${API_BASE_URL}/llm_critic`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        console.log("Response status:", response.status);
+        const responseData = await response.json();
+        console.log("Response data:", responseData);
+
+        if (!response.ok) {
+          throw new Error(responseData.error || "Network response was not ok");
+        }
+
+        // Log the exact feedback content
+        console.log("Raw feedback content:", responseData.critic_feedback);
+        
+        if (responseData.critic_feedback) {
+          // Set the feedback directly from the response
+          setLLMFeedback(responseData.critic_feedback);
+          console.log("Feedback set in state:", responseData.critic_feedback);
+        } else {
+          console.error("No feedback in response");
+          setLLMFeedback("Error: No feedback received");
+        }
+      } catch (error) {
+        console.error('Error with critic response:', error);
+        setLLMFeedback("Error getting feedback. Please try again.");
+      }
+    };
+
+    // Call the function immediately
+    criticResponseLLM();
+  }, [API_BASE_URL]); // Only depend on API_BASE_URL
+
+  if (!scenarioData) {
+    return <div>Loading...</div>;
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        textAlign: 'center',
-        flexDirection: 'column',
-      }}
-    >
-       <h1 style={{ fontSize: '36px', fontWeight: 'bold' }}>Results for Your Clinical Scenario</h1>
-       <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '20px' }}>Great Job!</h2>
+    <div className="w-full">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold mb-8 text-center">Scenario Results</h1>
+        
+        {/* LLM critic feedback */}
+        <div className="w-full max-w-5xl mx-auto mb-8 p-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold mb-4">Consultation Feedback</h2>
+          {LLMFeedback ? (
+            <div className="text-base space-y-4">
+              {LLMFeedback.split('\n').map((line, index) => {
+                // Clean the line of markdown symbols
+                const cleanLine = line
+                  .replace(/\*\*/g, '')
+                  .replace(/###/g, '')
+                  .replace(/####/g, '')
+                  .replace(/--/g, '')
+                  .replace(/\[|\]/g, '')
+                  .trim();
 
-       <div
-        style={{
-          border: '2px solid #0070f3',
-          borderRadius: '10px',
-          padding: '20px',
-          width: '40%', // Made it smaller
-          backgroundColor: '#f0f8ff',
-          boxShadow: '3px 3px 10px rgba(0, 0, 0, 0.1)',
-          marginBottom: '20px',
-        }}
-      >
-        <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          <strong>Score:</strong> {(results.num_correct / results.num_prompts * 100).toFixed(1)}%
-        </p>
-        <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          <strong>Correct Answers:</strong> {results.num_correct} / {results.num_prompts}
-        </p>
-        <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          <strong>Feedback:</strong> Great work!
-        </p>
+                if (!cleanLine) return null;
+
+                // Overall Performance section
+                if (cleanLine.includes('Overall Performance')) {
+                  return (
+                    <div key={index} className="mb-6">
+                      <h3 className="text-xl font-bold mb-2">{cleanLine}</h3>
+                    </div>
+                  );
+                }
+
+                // Score lines
+                if (cleanLine.startsWith('Score:')) {
+                  return (
+                    <div key={index} className="font-medium text-blue-600 mb-4">
+                      {cleanLine}
+                    </div>
+                  );
+                }
+
+                // Section headers
+                if (cleanLine.includes('Key Areas for Improvement') || cleanLine.includes('Recommendations for Improvement')) {
+                  return (
+                    <div key={index} className="mt-6">
+                      <h3 className="text-xl font-bold mb-3">{cleanLine}</h3>
+                    </div>
+                  );
+                }
+
+                // Numbered improvements or feedback points
+                if (/^\d+\./.test(cleanLine)) {
+                  return (
+                    <p key={index} className="ml-4 mb-2">
+                      {cleanLine}
+                    </p>
+                  );
+                }
+
+                // Section headers with scores
+                if (cleanLine.includes('(Score:')) {
+                  return (
+                    <h3 key={index} className="text-lg font-semibold mt-6 mb-3">
+                      {cleanLine}
+                    </h3>
+                  );
+                }
+
+                // Feedback lines
+                if (cleanLine.startsWith('Feedback:')) {
+                  return (
+                    <p key={index} className="ml-4 mb-4 text-gray-700">
+                      {cleanLine}
+                    </p>
+                  );
+                }
+
+                // Default text
+                return (
+                  <p key={index} className="mb-2">
+                    {cleanLine}
+                  </p>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-500 italic">Loading feedback...</p>
+          )}
+        </div>
+
+        {/* Conversation Transcript */}
+        <div className="w-full max-w-5xl mx-auto mb-8 p-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold mb-4">Conversation Transcript</h2>
+          <div className="space-y-2">
+            {scenarioData.conversation_history.map((message, index) => (
+              <div key={index} className={`p-3 rounded-lg ${
+                message.role === 'user' ? 'bg-blue-100 ml-4' : 'bg-gray-100 mr-4'
+              }`}>
+                <p className="font-semibold text-sm mb-1">{message.role === 'user' ? 'Doctor' : 'Patient'}</p>
+                <p className="text-base">{message.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="text-center pb-8">
+          <button onClick={() => router.push("/scenarioselection")} className="button-primary">
+            Try Another Scenario
+          </button>
+        </div>
       </div>
-
-
-      <button onClick={() => router.push("/")} className="button-primary">
-        Back to Home
-      </button>
     </div>
   );
 }

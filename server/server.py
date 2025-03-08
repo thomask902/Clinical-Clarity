@@ -56,8 +56,15 @@ from sentence_transformers import SentenceTransformer
 
 # App instance
 app = Flask(__name__)
-CORS(app)
 
+# Configure CORS to allow requests from your frontend
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Load environment variables
 load_dotenv()
@@ -70,10 +77,40 @@ FLASK_ENV = os.environ.get("FLASK_ENV", "production")
 
 # DB SETUP
 # Set up the database URI (use environment variable)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db_url = os.environ.get('DATABASE_URL')
 
-db = SQLAlchemy(app)
+# Configure Supabase client with direct URL and key
+supabase_url = os.environ.get('SUPABASE_URL')
+supabase_key = os.environ.get('SUPABASE_KEY')
+
+# Define models without SQLAlchemy
+class Scenario:
+    @staticmethod
+    def query():
+        class Query:
+            @staticmethod
+            def all():
+                response = supabase.table('scenarios').select('*').execute()
+                return response.data
+        return Query
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+class Prompt:
+    @staticmethod
+    def query():
+        class Query:
+            @staticmethod
+            def filter_by(scenario_id):
+                response = supabase.table('prompts').select('*').eq('scenario_id', scenario_id).order('sequence_order').execute()
+                return response.data
+        return Query
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 # load in model
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -100,78 +137,28 @@ llm_client = AzureOpenAI(
 # Corresponds to the custom name we chose for that deployment (on deployment Azure site)
 llm_deployment_id = "gpt-4o-audio-preview"
 
-# Define the Scenario table
-class Scenario(db.Model):
-    __tablename__ = 'scenarios'
+critic_client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_GPT_4O_API_KEY"),  
+    api_version="2024-08-01-preview",
+    azure_endpoint = os.getenv("AZURE_OPENAI_GPT_4O_ENDPOINT")
+)
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    door_sign = db.Column(db.Text, nullable=True)
-    instructions = db.Column(db.Text, nullable=True)
-    system_prompt = db.Column(db.Text, nullable=True)
-
-    def __repr__(self):
-        return f"<Scenario {self.id} - {self.title}>"
-
-# Define the Prompt table
-class Prompt(db.Model):
-    __tablename__ = 'prompts'
-
-    id = db.Column(db.Integer, primary_key=True)
-    expected_response = db.Column(db.Text, nullable=False)
-    patient_prompt = db.Column(db.Text, nullable=False)
-    scenario_id = db.Column(db.Integer, db.ForeignKey('scenarios.id'), nullable=False)
-    category = db.Column(db.String(50), nullable=True)
-    sequence_order = db.Column(db.Integer, nullable=True)
-
-    scenario = db.relationship('Scenario', backref=db.backref('prompts', lazy=True))
-
-    def __repr__(self):
-        return f"<Prompt {self.id} - Scenario {self.scenario_id}>"
+critic_deployment="gpt-4o"
 
 @app.route('/get_scenarios', methods=['GET'])
 def get_scenarios():
-
-    scenarios = Scenario.query.all()
+    scenarios = Scenario.query().all()
     return jsonify([
         {
-            'id': scenario.id,
-            'title': scenario.title,
-            'description': scenario.description
+            'id': scenario['id'],
+            'title': scenario['title'],
+            'description': scenario['description'],
+            'door_sign': scenario['door_sign'],
+            'system_prompt': scenario['system_prompt']
         }
         for scenario in scenarios
     ])
 
-# Querying the database for prompts in order of sequence
-@app.route('/get_prompt/<int:scenario_id>', methods=['GET'])
-def get_prompt(scenario_id):
-    prompts = Prompt.query.filter_by(scenario_id=scenario_id).order_by(asc(Prompt.sequence_order)).all()
-    if prompts:
-        scenario = Scenario.query.get(scenario_id)
-        return jsonify({
-            'prompts': [
-                {
-                    'id': prompt.id,
-                    'expected_response': prompt.expected_response,
-                    'patient_prompt': prompt.patient_prompt,
-                    'category': prompt.category,
-                    'sequence_order': prompt.sequence_order
-                } for prompt in prompts
-            ],
-            'scenario': {
-                'id': scenario.id,
-                'title': scenario.title,
-                'description': scenario.description,
-                'door_sign': scenario.door_sign,
-                'instructions': scenario.instructions,
-                'system_prompt': scenario.system_prompt
-            }
-        })
-    else:
-        return jsonify({'error': 'No prompts found for this scenario'}), 404
-
-# API to evaluate user input
 @app.route('/evaluate', methods=['POST'])
 def evaluate():
     data = request.get_json()
@@ -179,12 +166,14 @@ def evaluate():
     prompt_id = data.get('prompt_id')
 
     # Retrieve the prompt
-    prompt = Prompt.query.get(prompt_id)
+    prompt_response = supabase.table('prompts').select('*').eq('id', prompt_id).execute()
+    prompt = prompt_response.data[0] if prompt_response.data else None
+    
     if not prompt:
         return jsonify({'error': 'Prompt not found'}), 404
 
     # Encode vectors of response and target
-    expected_vec = model.encode([prompt.expected_response])[0]
+    expected_vec = model.encode([prompt['expected_response']])[0]
     user_vec = model.encode([user_input])[0]
 
     # distance is in [0,2] where 0 is identical, 1 is unrelated, and 0 is opposite
@@ -331,6 +320,76 @@ def llm_patient_response():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
+
+@app.route('/llm_critic', methods=['POST'])
+def llm_critic():
+    try:
+        print("Received request to /llm_critic")
+        data = request.get_json()
+        print("Received data:", data)
+        
+        # Get doctor's messages
+        doctor_messages = data.get("doctor_messages", [])
+        print("Doctor messages:", doctor_messages)
+        
+        # Format the conversation for evaluation
+        formatted_conversation = "\n".join([
+            f"Doctor: {msg}" for msg in doctor_messages
+        ])
+        print("Formatted conversation:", formatted_conversation)
+
+        # Use the OSCE examiner system prompt
+        critic_system_prompt = """You are an experienced OSCE examiner. Evaluate the following doctor's questions and communication style using the checklist below. For each item, provide a numerical score (0 if not addressed, 1 if partially addressed, 2 if fully addressed) along with detailed feedback.
+
+Opening the Consultation:
+• Introduces themselves to the patient
+• Confirms patient identity
+• Explains purpose of consultation
+
+History Taking Skills:
+• Uses open-ended questions appropriately
+• Follows up with specific questions
+• Shows logical progression in questioning
+
+Communication Skills:
+• Shows empathy and understanding
+• Uses appropriate language level
+• Maintains professional demeanor
+
+Evaluate based on these criteria and provide a comprehensive score and feedback for each section."""
+
+        messages = [
+            {
+                "role": "system",
+                "content": critic_system_prompt
+            },
+            {
+                "role": "user",
+                "content": f"Please evaluate this doctor's questions and communication style following the exact structure specified above:\n\n{formatted_conversation}"
+            }
+        ]
+
+        print("Sending to LLM with messages:", messages)
+
+        completion = critic_client.chat.completions.create(
+            model=critic_deployment,
+            messages=messages,
+            temperature=0.2  # Lower temperature for more structured output
+        )
+        
+        feedback = completion.choices[0].message.content
+        print("Received feedback:", feedback)
+        
+        return jsonify({
+            'critic_feedback': feedback
+        })
+
+    except Exception as e:
+        print(f"Error in llm_critic: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
 
 
 

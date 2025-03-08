@@ -29,7 +29,7 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen font-sans text-gray-900">
+    <div className="min-h-screen flex flex-col font-sans text-gray-900">
       {/* Header with Centered Navigation */}
       <header className="flex items-center justify-between p-4 bg-[#E8F8FF] shadow-md w-full">
         {/* Left Section: Logo & Title */}
@@ -85,7 +85,9 @@ export default function Layout({ children }) {
       </header>
 
       {/* Page Content */}
-      <main className="p-6">{children}</main>
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import AudioRecorder from "../components/AudioRecorder";
 
@@ -32,10 +32,9 @@ export default function ScenarioPage() {
   const router = useRouter();
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { scenarioId } = router.query;
+  const chatContainerRef = useRef(null);
 
   const [scenario, setScenario] = useState(null);
-  const [prompts, setPrompts] = useState([]);
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
   const [result, setResult] = useState("");
   const [resultList, setResultList] = useState([]);
@@ -46,29 +45,27 @@ export default function ScenarioPage() {
   const [patientResponse, setPatientResponse] = useState('')
   const [patientResponseAudio, setPatientResponseAudio] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
-  const [userInputList, setUserInputList] = useState([])
   const [isDoorSignVisible, setIsDoorSignVisible] = useState(false);
-  const [previousExpectedResponse, setPreviousExpectedResponse] = useState(null); // Stores expected response
-  const [showExpectedResponse, setShowExpectedResponse] = useState(false); // Controls when it appears
+  const [conversationHistory, setConversationHistory] = useState([]);  // Store just the conversation
 
   useEffect(() => {
     if (!scenarioId) return;
 
     const fetchScenarioData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/get_prompt/${scenarioId}`);
-        const data = await response.json();
-
-        if (data.error) {
-          console.error(data.error);
+        const response = await fetch(`${API_BASE_URL}/get_scenarios`);
+        const scenarios = await response.json();
+        const matchingScenario = scenarios.find(s => s.id === parseInt(scenarioId));
+        
+        if (!matchingScenario) {
+          console.error('Scenario not found');
           return;
         }
 
-        setScenario(data.scenario);
-        setPrompts(data.prompts);
-
-        // set the 
-        setSystemPrompt(data.scenario.system_prompt)
+        setScenario(matchingScenario);
+        setSystemPrompt(matchingScenario.system_prompt);
+        // Start with empty conversation
+        setConversationHistory([]);
 
       } catch (error) {
         console.error("Error fetching scenario data:", error);
@@ -78,11 +75,40 @@ export default function ScenarioPage() {
     fetchScenarioData();
   }, [scenarioId, API_BASE_URL]);
 
-  const addUserInputList = (newUserInput) => {
-    setUserInputList(prevList => [...prevList, newUserInput]);
+  // Add new useEffect for auto-scrolling
+  useEffect(() => {
+    if (chatContainerRef.current && conversationHistory.length > 0) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [conversationHistory]);
+
+  const handleCheckAndNext = async () => {
+    try {
+      // Add user's input to conversation
+      setConversationHistory(prev => [...prev, { role: 'user', content: userInput }]);
+
+      const response = await fetch(`${API_BASE_URL}/evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_input: userInput,
+          prompt_id: 1, // Just use a default prompt ID since we're not using them anymore
+        }),
+      });
+
+      await patientResponseLLM();
+
+      setUserInput("");
+      setAudioRecorderKey((prevKey) => prevKey + 1);
+      
+    } catch (error) {
+      console.error("Error evaluating response:", error);
+    }
   };
 
-  const isFinalPrompt = currentPromptIndex === prompts.length - 1;
+  const handleTranscriptionReady = (transcript) => {
+    setUserInput(transcript);
+  };
 
   // Helper function to convert base64 string (encoded audio file) to audio Blob
   const base64ToBlob = (base64, mime) => {
@@ -97,71 +123,6 @@ export default function ScenarioPage() {
     return new Blob([byteArray], { type: mime });
   }
 
-
-  const handleCheckAndNext = async () => {
-    if (!prompts.length || currentPromptIndex >= prompts.length) {
-      alert("No prompt to respond to.");
-      return;
-    }
-
-    const currentPrompt = prompts[currentPromptIndex];
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/evaluate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_input: userInput,
-          prompt_id: currentPrompt.id,
-        }),
-      });
-
-      const data = await response.json();
-      setResultList((prevList) => [...prevList, data.is_correct]);
-      setResult(data.is_correct ? "Correct!" : "False!");
-      setScore(data.score);
-
-      // If the response is wrong, prepare the expected response but do not show it yet
-      if (!data.is_correct) {
-        setPreviousExpectedResponse(currentPrompt.expected_response);
-        setShowExpectedResponse(false); // Prevent it from showing immediately
-      } else {
-        setPreviousExpectedResponse(null); // Clear if they got it right
-        setShowExpectedResponse(false);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      await patientResponseLLM();
-
-      if (!isFinalPrompt) {
-        setCurrentPromptIndex((prevIndex) => prevIndex + 1);
-        setResult("");
-        setUserInput("");
-        setScore("");
-        setAudioRecorderKey((prevKey) => prevKey + 1);
-        
-        // Show the expected response **only after the new prompt appears**
-        setTimeout(() => setShowExpectedResponse(true), 100);
-      }
-    } catch (error) {
-      console.error("Error evaluating response:", error);
-    }
-  };
-
-  const handleTranscriptionReady = (transcript) => {
-    setUserInput(transcript);
-  };
-
-  if (!prompts.length) {
-    return (
-      <div className="main-container flex flex-col items-center justify-center min-h-screen">
-        <h1 className="text-2xl font-bold">Loading Prompts...</h1>
-      </div>
-    );
-  }
-
-
   // LLM patient
   const patientResponseLLM = async () => {
 
@@ -172,12 +133,13 @@ export default function ScenarioPage() {
         headers: {'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_input: userInput,
-          system_prompt: systemPrompt
+          system_prompt: systemPrompt,
+          conversation_history: conversationHistory  // Send just the conversation, system prompt is separate
         }),
       });
 
       // make sure response is ok
-      console.log("Response status:", response.status);  // Should be 200 if it’s successful
+      console.log("Response status:", response.status);  // Should be 200 if it's successful
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -199,107 +161,133 @@ export default function ScenarioPage() {
       // create URL with audio blob
       const audioUrl = URL.createObjectURL(audioBlob)
       setPatientResponseAudio(audioUrl)
-
-      // set text transcript
       setPatientResponse(data.patient_transcript)
 
-      console.log("Audio URL:", patientResponseAudio);
-      console.log("Audio URL:", audioUrl);
+      // Add patient's response to conversation
+      setConversationHistory(prev => [...prev, { role: 'assistant', content: data.patient_transcript }]);
     
     } catch (error) {
       console.error('Error with patient response:', error);
     }
   }
 
+  // When user clicks End Scenario, save conversation and scenario info
+  const handleEndScenario = () => {
+    localStorage.setItem('scenario_data', JSON.stringify({
+      conversation_history: conversationHistory,
+      scenario_id: scenarioId,
+      system_prompt: systemPrompt
+    }));
+    router.push("/results");
+  }
+
+  if (!scenario) {
+    return (
+      <div className="main-container flex flex-col items-center justify-center min-h-screen">
+        <h1 className="text-2xl font-bold">Loading Scenario...</h1>
+      </div>
+    );
+  }
+
   return (
-    <div className="main-container flex flex-col items-center justify-center min-h-screen gap-6 p-6 relative">
-      {/* Bottom Left - Return to Selection & View Door Sign */}
-      <div className="absolute bottom-6 left-6 flex gap-4">
-        <button onClick={() => router.push("/scenarioselection")} className="button-secondary">
-          Return to Selection
-        </button>
-        <button onClick={() => setIsDoorSignVisible(true)} className="button-secondary">
-          View Door Sign
-        </button>
+    <div className="relative min-h-screen">
+      {/* Main Content Area - Scrollable Chat History */}
+      <div className="h-[calc(100vh-280px)] overflow-y-auto" ref={chatContainerRef}>
+        <div className="container mx-auto px-4 py-6">
+          <div className="w-full max-w-4xl mx-auto space-y-4">
+            {conversationHistory.length === 0 ? (
+              <div className="text-center text-gray-600 my-8">
+                Please speak to the patient.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {conversationHistory.map((message, index) => (
+                  <div key={index} className={`p-3 rounded-lg ${
+                    message.role === 'user' ? 'bg-blue-100 ml-8' : 'bg-gray-100 mr-8'
+                  }`}>
+                    <p className="font-semibold text-sm mb-1">{message.role === 'user' ? 'Doctor' : 'Patient'}</p>
+                    <p className="text-base">{message.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Right - End Scenario */}
-      <div className="absolute bottom-6 right-6">
-        <button onClick={() => router.push("/results")} className="button-secondary">
-          End Scenario
-        </button>
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-[88px] left-0 right-0 bg-white border-t border-gray-200 pt-4 pb-4">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto space-y-4">
+            {/* Audio Player */}
+            {patientResponseAudio && (
+              <div className="max-w-2xl mx-auto">
+                <audio
+                  key={patientResponseAudio}
+                  controls
+                  className="w-full"
+                >
+                  <source src={patientResponseAudio} type="audio/wav" />
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            )}
+
+            {/* Input Section */}
+            <div>
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="Type your response or start recording"
+                className="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+              <div className="flex justify-center gap-4 mt-4">
+                <AudioRecorder key={audioRecorderKey} onTranscriptReady={handleTranscriptionReady} />
+                <button
+                  onClick={handleCheckAndNext}
+                  className={userInput.trim() ? "button-primary" : "button-secondary"}
+                  disabled={!userInput.trim()}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Scenario Door Sign Popup */}
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+        <div className="container mx-auto max-w-5xl">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-4">
+              <button onClick={() => router.push("/scenarioselection")} className="button-secondary text-sm px-4 py-2 w-auto">
+                Return to Selection
+              </button>
+              <button onClick={() => setIsDoorSignVisible(true)} className="button-secondary text-sm px-4 py-2 w-auto">
+                View Door Sign
+              </button>
+            </div>
+            <button onClick={handleEndScenario} className="button-primary text-sm px-4 py-2 w-auto">
+              End Scenario
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Door Sign Modal */}
       {isDoorSignVisible && scenario && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-black rounded-lg w-96 p-5 shadow-lg z-50">
-          <h3 className="text-lg font-semibold text-center">Scenario Door Sign</h3>
-          <p className="text-center text-gray-700 mt-2">{scenario.door_sign}</p>
-          <div className="flex justify-center mt-4">
-            <button onClick={() => setIsDoorSignVisible(false)} className="button-secondary">
-              Close
-            </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <h3 className="text-xl font-semibold text-center mb-4">Scenario Door Sign</h3>
+            <p className="text-gray-700 text-center mb-6">{scenario.door_sign}</p>
+            <div className="flex justify-center">
+              <button onClick={() => setIsDoorSignVisible(false)} className="button-secondary text-sm px-4 py-2 w-auto">
+                Close
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Display Previous Expected Response if the Last Response Was Wrong (Only after Next Prompt Appears) */}
-      {showExpectedResponse && previousExpectedResponse && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg w-full max-w-lg text-center">
-          <p><strong>Previous Expected Response:</strong> {previousExpectedResponse}</p>
-        </div>
-      )} 
-
-      {/* LLM Patient Section */}
-      {!isFinalPrompt ? (
-        <>
-          <div className="text-center">
-            <h3 className="text-xl font-semibold">Patient Response:</h3>
-            <p className="text-lg text-gray-700">{patientResponse}</p>
-          </div>
-          {patientResponseAudio ? (
-            <audio
-              key={patientResponseAudio}
-              controls
-            >
-              <source src={patientResponseAudio} type="audio/wav" />
-              Your browser does not support the audio element.
-            </audio>
-          ) : (
-            <p>Please speak to the patient.</p>
-          )}
-          {/* Input Field */}
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your response or start recording"
-            className="border-2 border-black p-3 rounded-lg w-full max-w-lg"
-          />
-          <div className="flex gap-4 mt-4">
-            <AudioRecorder key={audioRecorderKey} onTranscriptReady={handleTranscriptionReady} />
-            <button
-              onClick={handleCheckAndNext}
-              className={userInput.trim() ? "button-primary" : "button-secondary"}
-              disabled={!userInput.trim()}
-            >
-              Check
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="mt-5">
-          <button onClick={() => router.push("/results")} className="button-primary">
-            See Results
-          </button>
-        </div>
-      )}
-
-      {result && (
-        <div className="mt-5 font-bold text-lg" style={{ color: result === "Correct!" ? "green" : "red" }}>
-          {result}
-          <br />
-          {score}
         </div>
       )}
     </div>

@@ -14,13 +14,15 @@ export default function ScenarioStartPage() {
 
     const fetchScenario = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/get_prompt/${scenarioId}`);
-        const data = await response.json();
-        if (data.error) {
-          console.error(data.error);
+        const response = await fetch(`${API_BASE_URL}/get_scenarios`);
+        const scenarios = await response.json();
+        const matchingScenario = scenarios.find(s => s.id === parseInt(scenarioId));
+        
+        if (!matchingScenario) {
+          console.error('Scenario not found');
           return;
         }
-        setScenario(data.scenario);
+        setScenario(matchingScenario);
       } catch (error) {
         console.error('Error fetching scenario:', error);
       }
